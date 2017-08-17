@@ -63,36 +63,6 @@ public abstract class ${specname}Actor {
 
 	/**
 	 * Constructor
-	 * @param serverIp the server IP address
-	 * @param serverPath the server URL
-	 */
-	public ${specname}Actor(String serverIp, String serverPath) {
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			public void run() {
-				if (client != null) client.shutdown();
-			}
-		});
-		wsrpcServerUri = URI.create("$wsproto://" + serverIp + ":$wsport" + serverPath);
-	}
-
-	/**
-	 * Constructor
-	 * @param serverIp the server IP address
-	 * @param serverPath the server URL
-	 * @param reconnectHandler the reconnection handler to use
-	 */
-	public ${specname}Actor(String serverIp, String serverPath, ClientManager.ReconnectHandler reconnectHandler) {
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			public void run() {
-				if (client != null) client.shutdown();
-			}
-		});
-		this.reconnectHandler = reconnectHandler;
-		wsrpcServerUri = URI.create("$wsproto://" + serverIp + ":$wsport" + serverPath);
-	}
-
-	/**
-	 * Constructor
 	 * @param serverUrl the server URL
 	 */
 	public ${specname}Actor(String serverUrl) {
