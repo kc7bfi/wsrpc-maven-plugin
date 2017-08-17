@@ -62,6 +62,7 @@ Example:
 	"classes": [
 		...
 	]
+}
 ```
 
 ### Constants defintion
