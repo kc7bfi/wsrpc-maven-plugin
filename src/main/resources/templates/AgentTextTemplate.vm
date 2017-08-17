@@ -1,0 +1,330 @@
+package $packageName;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
+import javax.websocket.Session;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.auth0.jwt.JWT;
+import net.minidev.json.JSONObject;
+import net.psgglobal.vicads.toolkit.wsrpc.WsRpcResponseQueue;
+import net.psgglobal.vicads.toolkit.wsrpc.WsRpcException;
+import net.psgglobal.vicads.toolkit.wsrpc.WsRpcInternalErrorException;
+import net.psgglobal.vicads.toolkit.wsrpc.WsRpcInvalidRequestException;
+import net.psgglobal.vicads.toolkit.wsrpc.WsRpcInvalidParamsException;
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
+
+import rx.Observable;
+
+/**
+ * Generated with Velocity - DO NOT EDIT
+ *
+ * This class is the server side Agent
+ *
+ * This class supports text communications via the WebSocket
+ */
+public abstract class ${specname}Agent {
+	private Logger logger = LoggerFactory.getLogger(getClass().getName());
+	
+	protected Session wsSession;
+	protected JWT jwtAuthentication;
+	protected WsRpcResponseQueue responses = new WsRpcResponseQueue();
+	protected AtomicLong lastRequestId = new AtomicLong();
+	
+	/**
+	 * @return the next request id
+	 */
+	protected long getNextRequestId() {
+		return lastRequestId.incrementAndGet();
+	}
+
+	/**
+	 * @return true if this session has been authenticated
+	 */
+	public boolean isAuthenticated() {
+		return jwtAuthentication != null;
+	}
+
+	/**
+	 * @param jwtAuthentication the jwtAuthentication to set
+	 */
+	public void setJwtAuthentication(JWT jwtAuthentication) {
+		this.jwtAuthentication = jwtAuthentication;
+	}
+
+	/**
+	 * Add a response to the response queue
+	 * @param requestId the request id the the response is for
+	 * @param response the response
+	 */
+	protected void addResponse(long requestId, JSONRPC2Response response) {
+		responses.addResponse(requestId, response);
+	}
+
+	/**
+	 * Send an error response
+	 * @param error the error
+	 * @param requestId the request id
+	 */
+	public void sendInternalError(String error, long requestId) throws IOException {
+		wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(error), requestId).toJSONString());
+	}
+
+	/**
+	 * Send an error response
+	 * @param error the error
+	 * @param requestId the request id
+	 */
+	public void sendInvalidParams(String error, long requestId) throws IOException {
+		wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INVALID_PARAMS.appendMessage(error), requestId).toJSONString());
+	}
+
+	/**
+	 * Send an error response
+	 * @param error the error
+	 * @param requestId the request id
+	 */
+	public void sendInvalidRequest(String error, long requestId) throws IOException {
+		wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INVALID_REQUEST.appendMessage(error), requestId).toJSONString());
+	}
+
+	/**
+	 * Send a response
+	 * @param requestId the original request id
+	 */
+	public void sendResponse(long requestId) throws IOException {
+		wsSession.getBasicRemote().sendText(new JSONRPC2Response(requestId).toJSONString());
+	}
+
+	/**
+	 * Send a response
+	 * @param result the method's result object
+	 * @param requestId the original request id
+	 */
+	public void sendResponse(Object result, long requestId) throws IOException {
+		wsSession.getBasicRemote().sendText(new JSONRPC2Response(result, requestId).toJSONString());
+	}
+
+	/**
+	 * Send an error response
+	 * @param error the error
+	 * @param requestId the request id
+	 */
+	public void sendSilentInternalError(String error, long requestId) {
+		try {
+			wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(error), requestId).toJSONString());
+		} catch (Exception e) {
+			logger.warn("Error sending response: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+		}
+	}
+
+	/**
+	 * Send an error response
+	 * @param error the error
+	 * @param requestId the request id
+	 */
+	public void sendSilentInvalidParams(String error, long requestId) {
+		try {
+			wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INVALID_PARAMS.appendMessage(error), requestId).toJSONString());
+		} catch (Exception e) {
+			logger.warn("Error sending response: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+		}
+	}
+
+	/**
+	 * Send an error response
+	 * @param error the error
+	 * @param requestId the request id
+	 */
+	public void sendSilentInvalidRequest(String error, long requestId) {
+		try {
+			wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INVALID_REQUEST.appendMessage(error), requestId).toJSONString());
+		} catch (Exception e) {
+			logger.warn("Error sending response: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+		}
+	}
+
+	/**
+	 * Send a response
+	 * @param requestId the original request id
+	 */
+	public void sendSilentResponse(long requestId) {
+		try {
+			wsSession.getBasicRemote().sendText(new JSONRPC2Response(requestId).toJSONString());
+		} catch (Exception e) {
+			logger.warn("Error sending response: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+		}
+	}
+
+	/**
+	 * Send a response
+	 * @param result the method's result object
+	 * @param requestId the original request id
+	 */
+	public void sendSilentResponse(Object result, long requestId) {
+		try {
+			wsSession.getBasicRemote().sendText(new JSONRPC2Response(result, requestId).toJSONString());
+		} catch (Exception e) {
+			logger.warn("Error sending response: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+		}
+	}
+
+	/**
+	 * @return the websocket session id
+	 */
+	public String getWsSessionId() {
+		return wsSession.getId();
+	}
+
+#foreach ($notice in $serverNotices)
+	/**
+	 * Send a $noteice.name notice
+#foreach ($parameter in $parameters)
+#if ($parameter.javadoc)
+	 * @param $parameter.name $parameter.javadoc
+#end
+#end
+	 */
+	public void send${display.capitalize($notice.name)}(#foreach ($parameter in $notice.parameters)$parameter.type $parameter.name#if($foreach.hasNext), #end#end) throws IOException {
+		${display.capitalize($notice.name)}Notice notice = new ${display.capitalize($notice.name)}Notice(#foreach ($parameter in $notice.parameters)$parameter.name, #end lastRequestId.incrementAndGet());
+		wsSession.getBasicRemote().sendText(notice.toJSONString());
+	}
+	
+#end
+	/**
+	 * Add a managed agent
+	 * @param managedAgent the managed agent
+	 */
+	public abstract void onAgentAdded(${specname}Agent managedAgent);
+	
+	/**
+	 * Remove a managed agent
+	 * @param managedAgent the managed agent
+	 */
+	public abstract void onAgentRemoved(${specname}Agent managedAgent);
+	
+#foreach ($request in $clientRequests)
+#if ($request.abstractOnCall)
+	/**
+	 * process a  $request.name request
+	 * @param request the request
+	 */
+	public abstract void on${display.capitalize($request.name)}(${display.capitalize($request.name)}Request request);
+	
+#else
+	/**
+	 * Execute a $request.name request
+#foreach ($parameter in $parameters)
+#if ($parameter.javadoc)
+	 * @param $parameter.name $parameter.javadoc
+#end
+#end
+#if ($parameter.returnsJavadoc)
+	 * @return $parameter.returnsJavadoc
+#end
+	 */
+	public abstract $request.returns ${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name#if($foreach.hasNext), #end#end) throws WsRpcException;
+	
+#end
+#end
+#foreach ($notice in $clientNotices)
+	/**
+	 * process a $notice.name notice
+	 * @param notice the notice
+	 */
+	public abstract void on${display.capitalize($notice.name)}(${display.capitalize($notice.name)}Notice notice);
+	
+#end
+#foreach ($request in $clientRequests)
+#if (!$request.abstractOnCall)
+	/**
+	 * process a $request.name request
+	 * @param request the request
+	 */
+	public final void on${display.capitalize($request.name)}(${display.capitalize($request.name)}Request request) {
+		try {
+#if ($request.returns == "void")
+			${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)request.#if ($parameter.type == "boolean")is#{else}get#{end}${display.capitalize($parameter.name)}()#if($foreach.hasNext), #end#end);
+			sendSilentResponse(request.getRequestId());
+#else
+			$request.returns value = ${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)request.#if ($parameter.type == "boolean")is#{else}get#{end}${display.capitalize($parameter.name)}()#if($foreach.hasNext), #end#end);
+			sendSilentResponse(value, request.getRequestId());
+#end
+		} catch (WsRpcInternalErrorException e) {
+			sendSilentInternalError(e.getMessage(), request.getRequestId());
+		} catch (WsRpcInvalidRequestException e) {
+			sendSilentInvalidRequest(e.getMessage(), request.getRequestId());
+		} catch (WsRpcInvalidParamsException e) {
+			sendSilentInvalidParams(e.getMessage(), request.getRequestId());
+		} catch (Exception e) {
+			sendSilentInternalError(e.getMessage(), request.getRequestId());
+		}
+	}
+	
+#end
+#end
+
+#foreach ($request in $serverRequests)
+	/**
+	 * Asynchronous $request.name request
+#foreach ($parameter in $parameters)
+#if ($parameter.javadoc)
+	 * @param $parameter.name $parameter.javadoc
+#end
+#end
+	 * @param timeout the call timeout in milliseconds
+	 */
+	public Observable<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
+		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end lastRequestId.incrementAndGet());
+		wsSession.getBasicRemote().sendText(request.toJSONString());
+		return responses.onResponse(request.getRequestId(), timeout);
+	}
+	
+#end
+	
+#foreach ($request in $serverRequests)
+	/**
+	 * Synchronous $request.name request
+#foreach ($parameter in $parameters)
+#if ($parameter.javadoc)
+	 * @param $parameter.name $parameter.javadoc
+#end
+#end
+	 * @param timeout the call timeout in milliseconds
+	 */
+	public $request.returns sync${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
+		JSONRPC2Response response = async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end timeout)
+				.timeout(timeout, TimeUnit.MILLISECONDS)
+				.toBlocking()
+				.first();
+		if (response == null) throw new IOException("TimeOut");
+		if (response.getError() != null) throw new IOException(response.getError().getMessage());
+#if ($request.returns != "void")
+		return ($request.returns) response.getResult();
+#end
+	}
+	
+#end
+
+#foreach ($request in $serverRequests)
+	/**
+	 * Asynchronous $request.name request
+	 * This request uses the default timeout value
+#foreach ($parameter in $parameters)
+#if ($parameter.javadoc)
+	 * @param $parameter.name $parameter.javadoc
+#end
+#end
+	 */
+	public Observable<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name#if($foreach.hasNext), #end#end) throws IOException {
+		return async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name#if($foreach.hasNext), #end#end);
+	}
+	
+#end
+}

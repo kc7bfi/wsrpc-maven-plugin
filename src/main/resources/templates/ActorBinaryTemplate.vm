@@ -1,0 +1,493 @@
+package $packageName;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
+import javax.websocket.CloseReason;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+
+import org.apache.commons.lang.mutable.MutableBoolean;
+import org.glassfish.tyrus.client.ClientManager;
+import org.glassfish.tyrus.client.ClientProperties;
+import org.glassfish.tyrus.client.SslEngineConfigurator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
+import com.thetransactioncompany.jsonrpc2.JSONRPC2ParseException;
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
+
+import net.minidev.json.JSONObject;
+import net.psgglobal.vicads.toolkit.wsrpc.WsRpcResponseQueue;
+import net.psgglobal.vicads.toolkit.wsrpc.WsRpcThreadPool;
+import rx.Observable;
+
+/**
+ * Generated with Velocity - DO NOT EDIT
+ *
+ * This class is the client side Actor
+ *
+ * This class supports binary communications via the WebSocket
+ */
+public abstract class ${specname}Actor {
+	private Logger logger = LoggerFactory.getLogger(getClass().getName());
+	private static AtomicLong LastReqId = new AtomicLong();
+
+	private final WsRpcResponseQueue responses = new WsRpcResponseQueue();
+	private ClientManager client;
+	private final URI wsrpcServerUri;
+	private ClientManager.ReconnectHandler reconnectHandler;
+
+	protected SslEngineConfigurator sslEngineConfigurator;
+	protected Session wsSession;
+	protected final MutableBoolean authenticated = new MutableBoolean(false);
+	protected final BlockingQueue<ByteBuffer> binaryDataQueue = new LinkedBlockingQueue<>();
+	
+	/**
+	 * Override this function allowing WSRPC to get the correct JWT.
+	 * @return the authorized JWT
+	 */
+	abstract public String getJWTAuthenticationToken();
+
+	/**
+	 * Constructor
+	 * @param serverIp the server IP address
+	 * @param serverPath the server URL
+	 */
+	public ${specname}Actor(String serverIp, String serverPath) {
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				if (client != null) client.shutdown();
+			}
+		});
+		wsrpcServerUri = URI.create("$wsproto://" + serverIp + ":$wsport" + serverPath);
+	}
+
+	/**
+	 * Constructor
+	 * @param serverIp the server IP address
+	 * @param serverPath the server URL
+	 * @param reconnectHandler the reconnection handler to use
+	 */
+	public ${specname}Actor(String serverIp, String serverPath, ClientManager.ReconnectHandler reconnectHandler) {
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				if (client != null) client.shutdown();
+			}
+		});
+		this.reconnectHandler = reconnectHandler;
+		wsrpcServerUri = URI.create("$wsproto://" + serverIp + ":$wsport" + serverPath);
+	}
+
+	/**
+	 * Constructor
+	 * @param serverUrl the server URL
+	 */
+	public ${specname}Actor(String serverUrl) {
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				if (client != null) client.shutdown();
+			}
+		});
+		wsrpcServerUri = URI.create(serverUrl);
+	}
+
+	/**
+	 * Constructor
+	 * @param serverUrl the server URL
+	 * @param reconnectHandler the reconnection handler to use
+	 */
+	public ${specname}Actor(String serverUrl, ClientManager.ReconnectHandler reconnectHandler) {
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				if (client != null) client.shutdown();
+			}
+		});
+		this.reconnectHandler = reconnectHandler;
+		wsrpcServerUri = URI.create(serverUrl);
+	}
+
+	/**
+	 * @return the server connection URL
+	 */
+	public URI getWsrpcServerUri() {
+		return wsrpcServerUri;
+	}
+	
+	/**
+	 * Connect to the server
+	 * @param connectTimeout the timeout to wait for connection
+	 * @return true if connection and authentication were successful
+	 */
+	public synchronized boolean connect(int connectTimeout) {
+		if (client != null) return true;
+		authenticated.setValue(false);
+		
+		try {
+			logger.info("Connecting at {}", wsrpcServerUri.toString());
+			client = ClientManager.createClient();
+			client.getProperties().put(ClientProperties.SHARED_CONTAINER, true);
+			client.getProperties().put(ClientProperties.SHARED_CONTAINER_IDLE_TIMEOUT, 5);
+			if (sslEngineConfigurator != null) client.getProperties().put(ClientProperties.SSL_ENGINE_CONFIGURATOR, sslEngineConfigurator);
+
+			if (this.reconnectHandler != null) 
+				client.getProperties().put(ClientProperties.RECONNECT_HANDLER, reconnectHandler);
+			else 
+				client.getProperties().put(ClientProperties.RECONNECT_HANDLER, new ClientManager.ReconnectHandler() {
+
+					private int counter;
+
+					@Override
+					public boolean onDisconnect(CloseReason closeReason) {
+						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
+						authenticated.setValue(false);
+						counter++;
+						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
+							logger.info("Reconnecting {} attempt {} because disconnected: {} {}", wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+						}
+						try { Thread.sleep(1000); } catch (InterruptedException e) { return false; }
+						return true;
+					}
+
+					@Override
+					public boolean onConnectFailure(Exception exception) {
+						counter++;
+						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
+							logger.info("Reconnecting {} attempt {} because connect failed: {}", wsrpcServerUri, counter, exception.getMessage());
+						}
+						try { Thread.sleep(1000); } catch (InterruptedException e) { return false; }
+						return true;
+					}
+				});
+				
+			client.asyncConnectToServer(this, wsrpcServerUri);
+
+			// wait for authentication
+			synchronized (authenticated) {
+				if (authenticated.booleanValue()) return true;
+				authenticated.wait(connectTimeout);
+				if (!authenticated.booleanValue()) logger.warn("Timed out waiting for authentication");
+				return authenticated.booleanValue();
+			}
+		} catch (Throwable e) {
+			logger.warn("Error connecting to server {}: {}", wsrpcServerUri.toString(), e.getMessage() == null ? e.toString() : e.getMessage()); e.printStackTrace();
+			return false;
+		}
+	}
+
+	/**
+	 * Close the connection
+	 */
+	public void close() {
+		// close the session
+		try {
+			if (wsSession != null) wsSession.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "Operator request"));
+		} catch (IOException e) {
+			logger.warn("Error closing connection: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+		}
+		wsSession = null;
+		client = null;
+	}
+	
+	/**
+	 * @return true if connected and authenticated
+	 */
+	public boolean isReady() {
+		return wsSession != null && authenticated.booleanValue();
+	}
+
+	/**
+	 * Convert a string to a ByteBuffer
+	 * @param str the string to convert
+	 * @return the new ByteBuffer
+	 */
+	private ByteBuffer StringByteBuffer(String str) {
+		ByteBuffer buffer = ByteBuffer.allocate(str.length()).put(str.getBytes());
+		buffer.flip();
+		return buffer;
+	}
+
+	/**
+	 * Convert a ByteBuffer to a String
+	 * @param buffer the ByteBuffer to convert
+	 * @return the string
+	 */
+	private String ByteBufferString(ByteBuffer buffer) {
+		byte[] str = new byte[buffer.remaining()];
+		buffer.get(str);
+		return new String(str);
+	}
+
+	/**
+	 * The session has been opened
+	 * @param wsSession the session
+	 */
+	@OnOpen
+	public void onOpen(Session wsSession) {
+		logger.info("Connected on session {}", wsSession.getId());
+		this.wsSession = wsSession;
+		String userJwtToken = getJWTAuthenticationToken();
+
+		// send authentication request
+		try {
+			Map<String, Object> params = new HashMap<>();
+			params.put("token", getJWTAuthenticationToken());
+			JSONRPC2Request request = new JSONRPC2Request("Authenticate", params, LastReqId.incrementAndGet());
+			wsSession.getBasicRemote().sendBinary(StringByteBuffer(request.toJSONString()));
+			responses.onResponse(request.getID(), 10 * 1000).subscribe(
+					authResponse -> {
+						logger.info("Authentication result: {}", authResponse.getResult());
+						synchronized (authenticated) {
+							authenticated.setValue((boolean)authResponse.getResult());
+							authenticated.notify();
+						}
+					},
+					authError -> {
+						logger.warn("Error authenticating with JWT {}: {}", userJwtToken, authError.getMessage() == null ? authError.toString() : authError.getMessage());
+						synchronized (authenticated) {
+							authenticated.setValue(false);
+							authenticated.notify();
+							close();
+						}
+					}
+					);
+		} catch (IOException e) {
+			logger.warn("Error sending authenticate request: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+			authenticated.setValue(false);
+			authenticated.notify();
+			close();
+		}
+	}
+
+	/**
+	 * The session has been closed
+	 * @param reason the reason it was closed
+	 * @param wsSession the session
+	 */
+	@OnClose
+	public void onClose(CloseReason reason, Session wsSession) {
+		logger.info("Closing connection to server due to {}", reason.getReasonPhrase());
+		this.wsSession = null;
+		authenticated.setValue(false);
+	}
+
+	/**
+	 * Called when an error is found on a locker
+	 * @param wsSession the websocket session
+	 * @param error the error
+	 */
+	@OnError
+	public void onError(Session wsSession, Throwable error) {
+		logger.warn("WebSocket error: {}", error.getMessage() == null ? error.toString() : error.getMessage());
+		error.printStackTrace();
+	}
+
+	/**
+	 * Send an error response
+	 * @param requestId the request id
+	 * @param error the error
+	 */
+	public void sendResponse(JSONRPC2Error error, Long requestId) throws IOException {
+		wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(error, requestId).toJSONString()));
+	}
+
+	/**
+	 * Send a response
+	 * @param response the response
+	 */
+	public void sendResponse(JSONRPC2Response response) throws IOException {
+		wsSession.getBasicRemote().sendBinary(StringByteBuffer(response.toJSONString()));
+	}
+
+	/**
+	 * Send an error response
+	 * @param requestId the request id
+	 * @param error the error
+	 */
+	public void sendSilentResponse(JSONRPC2Error error, Long requestId) {
+		try {
+			wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(error, requestId).toJSONString()));
+		} catch (Exception e) {
+			logger.warn("Error sending error response: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+		}
+	}
+
+	/**
+	 * Send a response
+	 * @param response the response
+	 */
+	public void sendSilentResponse(JSONRPC2Response response) {
+		try {
+			wsSession.getBasicRemote().sendBinary(StringByteBuffer(response.toJSONString()));
+		} catch (Exception e) {
+			logger.warn("Error sending response: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+		}
+	}
+
+#foreach ($request in $serverRequests)
+	/**
+	 * process a  $request.name request
+	 * @param request the request
+	 */
+	public abstract void on${display.capitalize($request.name)}(${request.name}Request request);
+	
+#end
+#foreach ($notice in $serverNotices)
+	/**
+	 * process a  $notice.name notice
+	 * @param notice the notice
+	 */
+	public abstract void on${display.capitalize($notice.name)}(${notice.name}Notice notice);
+	
+#end
+	/**
+	 * Process an inbound message
+	 * @param wsSession the WebSocket session
+	 * @param message the binary message
+	 */
+	@OnMessage
+	public void onMessage(Session wsSession, ByteBuffer message) {
+
+		// check for binary message
+		if (message.get(0) == (byte)'!') {
+			message.get();
+			binaryDataQueue.offer(message);
+			return;
+		}
+
+		// JSON message
+		String json = ByteBufferString(message);
+		logger.debug("OnMessage: {}", json);
+
+		// process results
+		try {
+			JSONRPC2Response response = JSONRPC2Response.parse(json);
+			responses.addResponse((Long)response.getID(), response);
+			return;
+		} catch (JSONRPC2ParseException e) {
+			if (logger.isDebugEnabled()) logger.debug("Error processing response message {}: {}", json, e.getMessage() == null ? e.toString() : e.getMessage());
+		} catch (Throwable e) {
+			logger.warn("Error processing response message {}: {}", json, e.getMessage() == null ? e.toString() : e.getMessage());
+		}
+
+		// process the message
+		try {
+			JSONRPC2Request request = JSONRPC2Request.parse(json);
+
+			// process methods
+#foreach ($request in $serverRequests)
+			if (${display.capitalize($request.name)}Request.canNarrow(request)) WsRpcThreadPool.getInstance().execute(() -> on${display.capitalize($request.name)}(${display.capitalize($request.name)}Request.narrow(request)));
+#end
+#foreach ($notice in $serverNotices)
+			if (${display.capitalize($notice.name)}Notice.canNarrow(request)) WsRpcThreadPool.getInstance().execute(() -> on${display.capitalize($notice.name)}(${display.capitalize($notice.name)}Notice.narrow(request)));
+#end
+
+			return;
+		} catch (JSONRPC2ParseException e) {
+			if (logger.isDebugEnabled()) logger.debug("Error processing request message {}: {}", json, e.getMessage() == null ? e.toString() : e.getMessage());
+		} catch (Throwable e) {
+			logger.warn("Error processing request message {}: {}", json, e.getMessage() == null ? e.toString() : e.getMessage());
+		}
+	}
+
+#foreach ($request in $clientRequests)
+	/**
+	 * Asynchronous $request.name request
+#foreach ($parameter in $parameters)
+#if ($parameter.javadoc)
+	 * @param $parameter.name $parameter.javadoc
+#end
+#end
+	 * @param timeout the call timeout in milliseconds
+	 */
+	public Observable<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end  int timeout) throws IOException {
+		if (!authenticated.booleanValue()) {
+			logger.debug("WebSocket not connected");
+			return  Observable.from(new JSONRPC2Response[] {
+					new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Not connected"), 0),
+			});
+		}
+		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end LastReqId.incrementAndGet());
+		wsSession.getBasicRemote().sendBinary(StringByteBuffer(request.toJSONString()));
+		return responses.onResponse(request.getRequestId(), timeout);
+	}
+
+#end
+
+#foreach ($request in $clientRequests)
+	/**
+	 * Synchronous $request.name request
+#foreach ($parameter in $parameters)
+#if ($parameter.javadoc)
+	 * @param $parameter.name $parameter.javadoc
+#end
+#end
+	 * @param timeout the call timeout in milliseconds
+	 */
+	public $request.returns sync${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
+		JSONRPC2Response response = async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end timeout)
+				.timeout(timeout, TimeUnit.MILLISECONDS)
+				.toBlocking()
+				.first();
+		if (response == null) throw new IOException("TimeOut");
+		if (response.getError() != null) throw new IOException(response.getError().getMessage());
+#if ($request.returns == "void")
+#elseif ($request.returns.indexOf(".") > 0)
+		return ${request.returns}.parse((JSONObject)response.getResult());
+#elseif ($request.returns == "int")
+		return ((Long) response.getResult()).intValue();
+#else
+		return ($request.returns) response.getResult();
+#end
+	}
+
+#end
+
+#foreach ($request in $clientRequests)
+	/**
+	 * Synchronous $request.name request
+	 * This request uses the default timeout value
+#foreach ($parameter in $parameters)
+#if ($parameter.javadoc)
+	 * @param $parameter.name $parameter.javadoc
+#end
+#end
+	 */
+	public $request.returns sync${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name#if($foreach.hasNext), #end#end) throws IOException {
+#if ($request.returns != "void")
+		return sync${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end $request.defTimeout);
+#else
+		sync${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end $request.defTimeout);
+#end
+	}
+
+#end
+
+#foreach ($request in $clientRequests)
+	/**
+	 * Asynchronous $request.name request
+	 * This request uses the default timeout value
+#foreach ($parameter in $parameters)
+#if ($parameter.javadoc)
+	 * @param $parameter.name $parameter.javadoc
+#end
+#end
+	 */
+	public Observable<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name#if($foreach.hasNext),#end#end) throws IOException {
+		return async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end $request.defTimeout);
+	}
+	
+#end
+}

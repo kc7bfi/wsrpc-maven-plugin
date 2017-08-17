@@ -1,0 +1,100 @@
+package $packageName;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
+
+/**
+ * Generated with Velocity - DO NOT EDIT
+#if ($noticeJavadoc)
+ *
+ * $noticeJavadoc
+#end
+ */
+public class $display.capitalize($noticeName)Notice {
+
+#foreach ($parameter in $parameters)
+	private final $parameter.type $parameter.name;
+#end
+	private final long requestId;
+
+	/**
+	 * Constructor
+	 *
+#foreach ($parameter in $parameters)
+#if ($parameter.javadoc)
+	 * @param $parameter.name $parameter.javadoc
+#end
+#end
+	 */
+	public $display.capitalize($noticeName)Notice(#foreach ($parameter in $parameters)$parameter.type $parameter.name, #end long requestId) {
+#foreach ($parameter in $parameters)
+		this.$parameter.name = $parameter.name;
+#end
+		this.requestId = requestId;
+	}
+
+	/**
+	 * Test if we can narrow a JSON message to this request
+	 * @param request the JSON request
+	 * @return true if we can narrow this request
+	 */
+	public static boolean canNarrow(JSONRPC2Request notice) {
+		return "$display.capitalize($noticeName)".equals(notice.getMethod());
+	}
+
+	/**
+	 * Narrow a notice
+	 * @param notice the notice
+	 * @return the new notice
+	 */
+	public static $display.capitalize($noticeName)Notice narrow(JSONRPC2Request notice) {
+#foreach ($parameter in $parameters)
+#if ($parameter.type.indexOf(".") > 0)
+		$parameter.type $parameter.name = ${parameter.type}.parse((JSONObject)request.getNamedParams().get("$parameter.name"));
+#elseif ($parameter.type == "int")
+		$parameter.type $parameter.name = ((Long)notice.getNamedParams().get("$parameter.name")).intValue();
+#else
+		$parameter.type $parameter.name = ($parameter.type)notice.getNamedParams().get("$parameter.name");
+#end
+#end
+		return new $display.capitalize($noticeName)Notice(#foreach ($parameter in $parameters)$parameter.name, #end (Long)notice.getID());
+	}
+
+	/**
+	 * @return the JSON string of this object
+	 */
+	public String toJSONString() {
+		Map<String, Object> paramsMap = new HashMap<>();
+#foreach ($parameter in $parameters)
+		paramsMap.put("$parameter.name", $parameter.name);
+#end
+		return new JSONRPC2Request("$display.capitalize($noticeName)", paramsMap, requestId).toJSONString();
+	}
+
+#foreach ($parameter in $parameters)
+#if ($parameter.javadoc)
+	/**
+	 * @return $parameter.name $parameter.javadoc
+	 */
+#end
+#if ($parameter.type == "boolean")
+	public $parameter.type is$display.capitalize($parameter.name)() {
+		return $parameter.name;
+	}
+	
+#else
+	/**
+	 * @return the request id
+	 */
+	public $parameter.type get$display.capitalize($parameter.name)() {
+		return $parameter.name;
+	}
+	
+#end
+#end
+	public long getRequestId() {
+		return requestId;
+	}
+}

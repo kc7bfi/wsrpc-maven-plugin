@@ -1,0 +1,127 @@
+package $packageName;
+
+import java.lang.StringBuilder;
+import java.util.HashMap;
+import java.util.Map;
+
+import net.minidev.json.JSONObject;
+import net.minidev.json.parser.JSONParser;
+
+/**
+ * Generated with Velocity - DO NOT EDIT
+#if ($classJavadoc)
+ *
+ * $classJavadoc
+#end
+ */
+public class $display.capitalize($className) {
+
+#foreach ($member in $members)
+	private $member.type $member.name;
+#end
+
+	/**
+	 * Constructor.
+	 */
+	public $display.capitalize($className)() {
+	}
+
+	/**
+	 * Constructor
+	 *
+#foreach ($member in $members)
+#if ($member.javadoc)
+	 * @param $member.name $member.javadoc
+#end
+#end
+	 */
+	public $display.capitalize($className)(#foreach ($member in $members)$member.type $member.name#if($foreach.hasNext),#end#end) {
+#foreach ($member in $members)
+		this.$member.name = $member.name;
+#end
+	}
+
+	/**
+	 * Parse a JSON message to this list
+	 * @param json the JSON message
+	 * @return the list
+	 */
+	public static $display.capitalize($className) parse(String json) {
+		try {
+			JSONParser parser = new JSONParser(JSONParser.MODE_PERMISSIVE);
+			JSONObject jsonObj = (JSONObject)parser.parse(json);
+			return parse(jsonObj);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	/**
+	 * Parse a JSON object to this list
+	 * @param jsonObj the JSON object
+	 * @return the list
+	 */
+	public static $display.capitalize($className) parse(JSONObject jsonObj) {
+		try {
+			$display.capitalize($className) newObj = new $display.capitalize($className)();
+#foreach ($member in $members)
+#if ($member.type == "int")
+			newObj.$member.name = ((Long)jsonObj.get("$member.name")).intValue();
+#else
+			newObj.$member.name = ($member.type)jsonObj.get("$member.name");
+#end
+#end
+			return newObj;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	/**
+	 * @return the JSON string of this object
+	 */
+	public String toJSONString() {
+		StringBuilder json = new StringBuilder("{");
+#foreach ($member in $members)
+#if ($member.type == "String")
+		json.append("'$member.name': '" + $member.name + "',");
+#else
+		json.append("'$member.name': " + $member.name + ",");
+#end
+#end
+		json.setLength(json.length() - 1);
+		return json.append("}").toString();
+	}
+
+#foreach ($member in $members)
+#if ($member.javadoc)
+	/**
+	 * @return $member.javadoc
+	 */
+#end
+#if ($member.type == "boolean")
+	public $member.type is$display.capitalize($member.name)() {
+		return $member.name;
+	}
+	
+#else
+	public $member.type get$display.capitalize($member.name)() {
+		return $member.name;
+	}
+	
+#end
+#end
+#foreach ($member in $members)
+#if ($member.javadoc)
+	/**
+	 * @param $member.name $member.javadoc
+	 */
+#end
+	public void set$display.capitalize($member.name)($member.type $member.name) {
+		this.$member.name = $member.name;
+	}
+
+#end
+}

@@ -1,0 +1,163 @@
+package $packageName;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
+import com.thetransactioncompany.jsonrpc2.JSONRPC2ParseException;
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
+import net.psgglobal.vicads.toolkit.wsrpc.WsRpcThreadPool;
+
+/**
+ * Generated with Velocity - DO NOT EDIT
+ *
+ * This class receives the WebSocket requests and sends them
+ * to the appropreate Agent
+ *
+ * This class supports text communications via the WebSocket
+ */
+public abstract class ${specname}Reactor<T extends ${specname}Agent> {
+	private Logger logger = LoggerFactory.getLogger(getClass().getName());
+
+	private final boolean requireAuthentication = $rquireAuth;
+	private final Map<String, T> managedAgents = new HashMap<>();
+
+	/**
+	 * Create a managed agent
+	 * @param wsSession the WebSocket session
+	 * @return the new managed agent
+	 */
+	public abstract T createAgent(Session wsSession);
+	
+	/**
+	 * Validate the JWT string
+	 * @param jwtToken the JWT token
+	 * @return true if the token is valid
+	 */
+	public abstract JWT valiateJWTToken(String jwtToken) throws JWTVerificationException;
+	
+	/**
+	 * Called when a WebSocket session is opened
+	 */
+	@OnOpen
+	public void onOpen(Session wsSession) {
+		logger.debug("WsSession {} opened", wsSession.getId());
+		T managedAgent = createAgent(wsSession);
+		managedAgents.put(wsSession.getId(), managedAgent);
+		managedAgent.onAgentAdded(managedAgent);
+	}
+
+	/**
+	 * Called when a WebSocket session is closed
+	 */
+	@OnClose
+	public void onClose(Session wsSession) {
+		logger.debug("WsSession {} closed", wsSession.getId());
+		T managedAgent = managedAgents.remove(wsSession.getId());
+		if (managedAgent != null) managedAgent.onAgentRemoved(managedAgent);
+	}
+
+	/**
+	 * Called when an error occurs on a WebSocket session
+	 */
+	@OnError
+	public void onError(Session wsSession, Throwable error) {
+		logger.warn("WebSocket error: {}", error.getMessage() == null ? error.toString() : error.getMessage());
+		error.printStackTrace();
+		T managedAgent = managedAgents.remove(wsSession.getId());
+		if (managedAgent != null) managedAgent.onAgentRemoved(managedAgent);
+	}
+
+	/**
+	 * Process an inbound message
+	 * @param json the JSON message
+	 * @param wsSession the WebSocket session
+	 */
+	@OnMessage
+	public void onMessage(String json, Session wsSession) {
+		logger.debug("OnMessage: {}", json);
+		T managedAgent = managedAgents.get(wsSession.getId());
+		if (managedAgent == null) {
+			logger.warn("Managed session for {} is unknown", wsSession.getId());
+			return;
+		}
+
+		// process results
+		try {
+			JSONRPC2Response response = JSONRPC2Response.parse(json);
+			managedAgent.addResponse((Long)response.getID(), response);
+			return;
+		} catch (JSONRPC2ParseException e) {
+		
+			// process the message
+			JSONRPC2Request request = null;
+			try {
+				request = JSONRPC2Request.parse(json);
+
+				// Verify that we have been authenticated
+				if (requireAuthentication && !request.getMethod().equals("Authenticate") && !managedAgent.isAuthenticated()) {
+					logger.warn("Session {} has not been authenticated", wsSession.getId());
+					managedAgent.sendInvalidRequest("User not authenticated", (Long)request.getID());
+					return;
+				}
+
+				// process methods
+				final JSONRPC2Request finalRequest = request;
+				if (request.getMethod().equals("Authenticate")) doAuthenticate(managedAgent, request);
+#foreach ($request in $clientRequests)
+				else if (${display.capitalize($request.name)}Request.canNarrow(request)) WsRpcThreadPool.getInstance().execute(() -> managedAgent.on${display.capitalize($request.name)}(${display.capitalize($request.name)}Request.narrow(finalRequest)));
+#end
+#foreach ($notice in $clientNotices)
+				else if (${display.capitalize($notice.name)}Notice.canNarrow(request)) WsRpcThreadPool.getInstance().execute(() -> managedAgent.on${display.capitalize($notice.name)}(${display.capitalize($notice.name)}Notice.narrow(finalRequest)));
+#end
+				return;
+			} catch (JSONRPC2ParseException ee) {
+				if (logger.isDebugEnabled()) logger.debug("Error processing request message {}: {}", json, ee.getMessage() == null ? ee.toString() : ee.getMessage());
+			} catch (Throwable ee) {
+				logger.warn("Error processing request message {}: {}", json, ee.getMessage() == null ? ee.toString() : ee.getMessage()); ee.printStackTrace();
+				if (request != null) managedAgent.sendSilentInternalError(ee.getMessage(), (Long)request.getID());
+			}
+		} catch (Throwable e) {
+			logger.warn("Error processing response message {}: {}", json, e.getMessage() == null ? e.toString() : e.getMessage()); e.printStackTrace();
+		}
+		
+		logger.warn("unknown message: {}", json);
+	}
+
+	/**
+	 * Authenticate an inbound session
+	 * @param managedAgent the managed agent
+	 * @param request the Authentication request
+	 */
+	private void doAuthenticate(T managedAgent, JSONRPC2Request request) {
+		try {
+			JWT jwtAuthentication = valiateJWTToken((String) request.getNamedParams().get("token"));
+			managedAgent.setJwtAuthentication(jwtAuthentication);
+			managedAgent.sendResponse(true, (Long)request.getID());
+			logger.debug("WsSession {} authenticated", managedAgent.getWsSessionId());
+		} catch (JWTVerificationException e) {
+			logger.warn("Invalid authentication token for session {}: {}", managedAgent.getWsSessionId(), e.getMessage() == null ? e.toString() : e.getMessage());
+			managedAgent.sendSilentInvalidRequest("Invalid authentication token", (Long)request.getID());
+		} catch (NullPointerException e) {
+			logger.warn("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), e.getMessage() == null ? e.toString() : e.getMessage()); e.printStackTrace();
+			managedAgent.sendSilentInternalError(e.getMessage(), (Long)request.getID());
+		} catch (Exception e) {
+			logger.warn("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), e.getMessage() == null ? e.toString() : e.getMessage());
+			managedAgent.sendSilentInternalError(e.getMessage(), (Long)request.getID());
+		}
+	}
+}

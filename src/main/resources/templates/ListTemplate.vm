@@ -1,0 +1,95 @@
+package $packageName;
+
+import java.lang.StringBuilder;
+import java.util.LinkedList;
+import java.util.List;
+
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
+import net.minidev.json.parser.JSONParser;
+
+/**
+ * Generated with Velocity - DO NOT EDIT
+#if ($listJavadoc)
+ *
+ * $listJavadoc
+#end
+ */
+public class $display.capitalize($listName) {
+
+	private List<$listOf> list = new LinkedList<>();
+
+	/**
+	 * Constructor
+	 */
+	public $display.capitalize($listName)() {
+	}
+
+	/**
+	 * Constructor
+	 * @param list the list
+	 */
+	public $display.capitalize($listName)(List<$listOf> list) {
+		this.list = list;
+	}
+
+	/**
+	 * Parse a JSON message to this list
+	 * @param json the JSON message
+	 * @return the list
+	 */
+	public static $display.capitalize($listName) parse(String json) {
+		try {
+			JSONParser parser = new JSONParser(JSONParser.MODE_PERMISSIVE);
+			JSONObject jsonObj = (JSONObject)parser.parse(json);
+			return parse(jsonObj);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	/**
+	 * Parse a JSON object to this list
+	 * @param jsonObj the JSON object
+	 * @return the list
+	 */
+	public static $display.capitalize($listName) parse(JSONObject jsonObj) {
+		try {
+  			$display.capitalize($listName) newObj = new $display.capitalize($listName)();
+    		JSONArray items = (JSONArray) jsonObj.get("$item");
+   			if (items != null && items.size() > 0) {
+      			for (Object item : items) {
+      				newObj.getList().add(${listOf}.parse((JSONObject)item));
+     			}
+     		}
+			return newObj;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	/**
+	 * @return the JSON string of this object
+	 */
+	public String toJSONString() {
+		StringBuilder json = new StringBuilder("{");
+		json.append("'$item': [");
+		boolean isFirst = true;
+		for ($listOf item : list) {
+			if (!isFirst) json.append(",");
+			json.append("[" + item.toJSONString() + "]");
+			isFirst = false;
+		}
+		json.append("]");
+		return json.append("}").toString();
+	}
+
+	/**
+	 * @return the list
+	 */
+	public List<$listOf> getList() {
+		return list;
+	}
+}
