@@ -738,6 +738,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 				Map<String, Object> request = new HashMap<String, Object>();
 				request.put("name", requestSpec.get("name"));
 				request.put("returns", requestSpec.get("returns"));
+				request.put("returnsJavadoc", requestSpec.get("returnsJavadoc"));
 				request.put("parameters", getParametersMap((List<Map<String, Object>>) requestSpec.get("parameters")));
 				String defTimeout = specification.get("defaultTimeout") == null ? "200" : (String) specification.get("defaultTimeout");
 				request.put("defTimeout", defTimeout);
