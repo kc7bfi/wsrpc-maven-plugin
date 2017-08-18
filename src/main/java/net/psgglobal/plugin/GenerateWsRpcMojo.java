@@ -46,19 +46,15 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 	/**
 	 * Execute the plugin
-	 * 
-	 * @throws MojoExecutionException
-	 *             any errors
+	 * @throws MojoExecutionException any errors
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public void execute() throws MojoExecutionException {
 
 		// process each specification file
-		if (inputDir == null)
-			throw new MojoExecutionException("Cannot find inputDir");
-		if (!inputDir.exists())
-			throw new MojoExecutionException("inputDir does not exist");
+		if (inputDir == null) throw new MojoExecutionException("Cannot find inputDir");
+		if (!inputDir.exists()) throw new MojoExecutionException("inputDir does not exist");
 		for (File specificationFile : inputDir.listFiles()) {
 
 			// read the specification file
@@ -71,12 +67,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 				getLog().warn("Error reading input sorce files: " + e.getMessage());
 				throw new MojoExecutionException("Error reading input sorce files", e);
 			} finally {
-				if (reader != null)
-					try {
-						reader.close();
-					} catch (Exception e) {
-						getLog().warn("Could not close reader " + e.getMessage());
-					}
+				if (reader != null) try { reader.close(); } catch (Exception e) { getLog().warn("Could not close reader " + e.getMessage()); }
 			}
 			JSONParser parser = JsonParserFactory.getInstance().newJsonParser();
 			Map<String, Object> specification = null;
@@ -108,23 +99,19 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 	/**
 	 * Read an entire resource as a string
-	 * 
-	 * @param reader
-	 *            the buffered reader
+	 * @param reader the buffered reader
 	 * @return the string
-	 * @throws IOException
-	 *             any errors
+	 * @throws IOException any errors
 	 */
 	private String readAsString(BufferedReader reader) throws IOException {
 		StringBuilder str = new StringBuilder();
-		for (String ln = reader.readLine(); ln != null; ln = reader.readLine())
-			str.append(ln + "\n");
+		for (String ln = reader.readLine(); ln != null; ln = reader.readLine()) str.append(ln + "\n");
 		return str.toString();
 	}
 
 	/**
-	 * @param name
-	 *            the name
+	 * Capitalize a string
+	 * @param name the name
 	 * @return the name capitalized
 	 */
 	private String capitalize(String name) {
@@ -132,39 +119,29 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	}
 
 	/**
-	 * @param specName
-	 *            the spec name
-	 * @param specPackage
-	 *            the package
+	 * Create the directories for the generated files
+	 * @param specName the specification name
+	 * @param specPackage the package
 	 * @return the package path
 	 */
 	private String createPackageDirs(String specName, String specPackage) {
 		StringBuilder pathName = new StringBuilder(outputDir.getAbsolutePath() + "/");
 		String[] subdirNames = specPackage.split("\\.");
-		for (String subdirName : subdirNames)
-			pathName.append(subdirName + "/");
+		for (String subdirName : subdirNames) pathName.append(subdirName + "/");
 		File pathFile = new File(pathName.toString());
 		pathFile.mkdirs();
 		return pathName.toString();
-
 	}
 
 	/**
-	 * Generate all the requst files
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param specification
-	 *            the specification
-	 * @throws MojoExecutionException
-	 *             Errors
+	 * Generate all the classes files
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param specification the specification
+	 * @throws MojoExecutionException Errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateClassFiles(String specName, String specPackage, Map<String, Object> specification)
-			throws MojoExecutionException {
-		// process each clasz
+	private void vmGenerateClassFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> claszs = (List<Map<String, Object>>) specification.get("classes");
 		if (claszs != null) {
 			for (Map<String, Object> clasz : claszs) {
@@ -174,20 +151,14 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	}
 
 	/**
-	 * Generate a single clasz file
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param clasz
-	 *            the clasz
-	 * @throws MojoExecutionException
-	 *             errors
+	 * Generate a single class file
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param classSpecification the class specification
+	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateClassFile(String specName, String specPackage, Map<String, Object> clasz)
-			throws MojoExecutionException {
+	private void vmGenerateClassFile(String specName, String specPackage, Map<String, Object> classSpecification) throws MojoExecutionException {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
@@ -204,9 +175,9 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
 		velocityContext.put("packageName", specPackage);
-		velocityContext.put("className", clasz.get("name"));
-		velocityContext.put("classJavadoc", clasz.get("javadoc"));
-		velocityContext.put("members", getParametersMap((List<Map<String, Object>>) clasz.get("members")));
+		velocityContext.put("className", classSpecification.get("name"));
+		velocityContext.put("classJavadoc", classSpecification.get("javadoc"));
+		velocityContext.put("members", getParametersMap((List<Map<String, Object>>) classSpecification.get("members")));
 
 		// generate the code
 		StringWriter codeWriter = new StringWriter();
@@ -214,7 +185,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// save the code
 		String dirPath = createPackageDirs(specName, specPackage);
-		String sourceCodePath = dirPath + capitalize((String) clasz.get("name")) + ".java";
+		String sourceCodePath = dirPath + capitalize((String) classSpecification.get("name")) + ".java";
 		File claszCodeFile = new File(sourceCodePath);
 		try {
 			claszCodeFile.createNewFile();
@@ -231,31 +202,19 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 			getLog().warn("Cannot write source code file " + sourceCodePath + ": " + e.getMessage());
 			throw new MojoExecutionException("Cannot write source code file");
 		} finally {
-			if (writer != null)
-				try {
-					writer.close();
-				} catch (Exception e) {
-					getLog().warn("Could not close writer: " + e.getMessage());
-				}
+			if (writer != null) try { writer.close(); } catch (Exception e) { getLog().warn("Could not close writer: " + e.getMessage()); }
 		}
 	}
 
 	/**
-	 * Generate all the requst files
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param specification
-	 *            the specification
-	 * @throws MojoExecutionException
-	 *             Errors
+	 * Generate all the constants files
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param specification the specification
+	 * @throws MojoExecutionException Errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateConstsFiles(String specName, String specPackage, Map<String, Object> specification)
-			throws MojoExecutionException {
-		// process each clasz
+	private void vmGenerateConstsFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> claszs = (List<Map<String, Object>>) specification.get("consts");
 		if (claszs != null) {
 			for (Map<String, Object> clasz : claszs) {
@@ -265,20 +224,14 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	}
 
 	/**
-	 * Generate a single clasz file
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param clasz
-	 *            the clasz
-	 * @throws MojoExecutionException
-	 *             errors
+	 * Generate a single constants file
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param constSpecification the constant specification
+	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateConstsFile(String specName, String specPackage, Map<String, Object> clasz)
-			throws MojoExecutionException {
+	private void vmGenerateConstsFile(String specName, String specPackage, Map<String, Object> constSpecification) throws MojoExecutionException {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
@@ -295,9 +248,9 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
 		velocityContext.put("packageName", specPackage);
-		velocityContext.put("className", clasz.get("name"));
-		velocityContext.put("classJavadoc", clasz.get("javadoc"));
-		velocityContext.put("members", getParametersMap((List<Map<String, Object>>) clasz.get("members")));
+		velocityContext.put("className", constSpecification.get("name"));
+		velocityContext.put("classJavadoc", constSpecification.get("javadoc"));
+		velocityContext.put("members", getParametersMap((List<Map<String, Object>>) constSpecification.get("members")));
 
 		// generate the code
 		StringWriter codeWriter = new StringWriter();
@@ -305,7 +258,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// save the code
 		String dirPath = createPackageDirs(specName, specPackage);
-		String sourceCodePath = dirPath + capitalize((String) clasz.get("name")) + ".java";
+		String sourceCodePath = dirPath + capitalize((String) constSpecification.get("name")) + ".java";
 		File claszCodeFile = new File(sourceCodePath);
 		try {
 			claszCodeFile.createNewFile();
@@ -322,31 +275,19 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 			getLog().warn("Cannot write source code file " + sourceCodePath + ": " + e.getMessage());
 			throw new MojoExecutionException("Cannot write source code file");
 		} finally {
-			if (writer != null)
-				try {
-					writer.close();
-				} catch (Exception e) {
-					getLog().warn("Could not close writer: " + e.getMessage());
-				}
+			if (writer != null) try { writer.close(); } catch (Exception e) { getLog().warn("Could not close writer: " + e.getMessage()); }
 		}
 	}
 
 	/**
-	 * Generate all the requst files
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param specification
-	 *            the specification
-	 * @throws MojoExecutionException
-	 *             Errors
+	 * Generate all the list files
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param specification the specification
+	 * @throws MojoExecutionException Errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateListFiles(String specName, String specPackage, Map<String, Object> specification)
-			throws MojoExecutionException {
-		// process each clasz
+	private void vmGenerateListFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> lists = (List<Map<String, Object>>) specification.get("lists");
 		if (lists != null) {
 			for (Map<String, Object> list : lists) {
@@ -357,18 +298,12 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 	/**
 	 * Generate a single list file
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param list
-	 *            the clasz
-	 * @throws MojoExecutionException
-	 *             errors
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param listSpecification the list specification
+	 * @throws MojoExecutionException errors
 	 */
-	private void vmGenerateListFile(String specName, String specPackage, Map<String, Object> list)
-			throws MojoExecutionException {
+	private void vmGenerateListFile(String specName, String specPackage, Map<String, Object> listSpecification) throws MojoExecutionException {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
@@ -385,10 +320,10 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
 		velocityContext.put("packageName", specPackage);
-		velocityContext.put("listName", list.get("name"));
-		velocityContext.put("listOf", list.get("listOf"));
-		velocityContext.put("listJavadoc", list.get("javadoc"));
-		velocityContext.put("item", list.get("item"));
+		velocityContext.put("listName", listSpecification.get("name"));
+		velocityContext.put("listOf", listSpecification.get("listOf"));
+		velocityContext.put("listJavadoc", listSpecification.get("javadoc"));
+		velocityContext.put("item", listSpecification.get("item"));
 
 		// generate the code
 		StringWriter codeWriter = new StringWriter();
@@ -396,7 +331,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// save the code
 		String dirPath = createPackageDirs(specName, specPackage);
-		String sourceCodePath = dirPath + capitalize((String) list.get("name")) + ".java";
+		String sourceCodePath = dirPath + capitalize((String) listSpecification.get("name")) + ".java";
 		File listCodeFile = new File(sourceCodePath);
 		try {
 			listCodeFile.createNewFile();
@@ -413,31 +348,19 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 			getLog().warn("Cannot write source code file " + sourceCodePath + ": " + e.getMessage());
 			throw new MojoExecutionException("Cannot write source code file");
 		} finally {
-			if (writer != null)
-				try {
-					writer.close();
-				} catch (Exception e) {
-					getLog().warn("Could not close writer: " + e.getMessage());
-				}
+			if (writer != null) try { writer.close(); } catch (Exception e) { getLog().warn("Could not close writer: " + e.getMessage()); }
 		}
 	}
 
 	/**
-	 * Generate all the requst files
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param specification
-	 *            the specification
-	 * @throws MojoExecutionException
-	 *             Errors
+	 * Generate all the notice files
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param specification the specification
+	 * @throws MojoExecutionException Errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateNoticeFiles(String specName, String specPackage, Map<String, Object> specification)
-			throws MojoExecutionException {
-		// process each notice
+	private void vmGenerateNoticeFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> notices = (List<Map<String, Object>>) specification.get("notices");
 		if (notices != null) {
 			for (Map<String, Object> notice : notices) {
@@ -448,19 +371,13 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 	/**
 	 * Generate a single notice file
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param notice
-	 *            the notice
-	 * @throws MojoExecutionException
-	 *             errors
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param noticeSpecification the notice specification
+	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateNoticeFile(String specName, String specPackage, Map<String, Object> notice)
-			throws MojoExecutionException {
+	private void vmGenerateNoticeFile(String specName, String specPackage, Map<String, Object> noticeSpecification) throws MojoExecutionException {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
@@ -477,9 +394,9 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
 		velocityContext.put("packageName", specPackage);
-		velocityContext.put("noticeName", notice.get("name"));
-		velocityContext.put("noticeJavadoc", notice.get("javadoc"));
-		velocityContext.put("parameters", getParametersMap((List<Map<String, Object>>) notice.get("parameters")));
+		velocityContext.put("noticeName", noticeSpecification.get("name"));
+		velocityContext.put("noticeJavadoc", noticeSpecification.get("javadoc"));
+		velocityContext.put("parameters", getParametersMap((List<Map<String, Object>>) noticeSpecification.get("parameters")));
 
 		// generate the code
 		StringWriter codeWriter = new StringWriter();
@@ -487,7 +404,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// save the code
 		String dirPath = createPackageDirs(specName, specPackage);
-		String sourceCodePath = dirPath + capitalize((String) notice.get("name")) + "Notice.java";
+		String sourceCodePath = dirPath + capitalize((String) noticeSpecification.get("name")) + "Notice.java";
 		File noticeCodeFile = new File(sourceCodePath);
 		try {
 			noticeCodeFile.createNewFile();
@@ -504,31 +421,19 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 			getLog().warn("Cannot write source code file " + sourceCodePath + ": " + e.getMessage());
 			throw new MojoExecutionException("Cannot write source code file");
 		} finally {
-			if (writer != null)
-				try {
-					writer.close();
-				} catch (Exception e) {
-					getLog().warn("Could not close writer: " + e.getMessage());
-				}
+			if (writer != null) try { writer.close(); } catch (Exception e) { getLog().warn("Could not close writer: " + e.getMessage()); }
 		}
 	}
 
 	/**
-	 * Generate all the requst files
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param specification
-	 *            the specification
-	 * @throws MojoExecutionException
-	 *             Errors
+	 * Generate all the request files
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param specification the specification
+	 * @throws MojoExecutionException Errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateRequestFiles(String specName, String specPackage, Map<String, Object> specification)
-			throws MojoExecutionException {
-		// process each request
+	private void vmGenerateRequestFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> requests = (List<Map<String, Object>>) specification.get("requests");
 		for (Map<String, Object> request : requests) {
 			vmGenerateRequestFile(specName, specPackage, request);
@@ -537,19 +442,13 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 	/**
 	 * Generate a single request file
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param request
-	 *            the request
-	 * @throws MojoExecutionException
-	 *             errors
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param requestSpecification the request specification
+	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateRequestFile(String specName, String specPackage, Map<String, Object> request)
-			throws MojoExecutionException {
+	private void vmGenerateRequestFile(String specName, String specPackage, Map<String, Object> requestSpecification) throws MojoExecutionException {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
@@ -566,9 +465,9 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
 		velocityContext.put("packageName", specPackage);
-		velocityContext.put("requestName", request.get("name"));
-		velocityContext.put("requestJavadoc", request.get("javadoc"));
-		velocityContext.put("parameters", getParametersMap((List<Map<String, Object>>) request.get("parameters")));
+		velocityContext.put("requestName", requestSpecification.get("name"));
+		velocityContext.put("requestJavadoc", requestSpecification.get("javadoc"));
+		velocityContext.put("parameters", getParametersMap((List<Map<String, Object>>) requestSpecification.get("parameters")));
 
 		// generate the code
 		StringWriter codeWriter = new StringWriter();
@@ -576,7 +475,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// save the code
 		String dirPath = createPackageDirs(specName, specPackage);
-		String sourceCodePath = dirPath + capitalize((String) request.get("name")) + "Request.java";
+		String sourceCodePath = dirPath + capitalize((String) requestSpecification.get("name")) + "Request.java";
 		File requestCodeFile = new File(sourceCodePath);
 		try {
 			requestCodeFile.createNewFile();
@@ -593,30 +492,19 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 			getLog().warn("Cannot write source code file " + sourceCodePath + ": " + e.getMessage());
 			throw new MojoExecutionException("Cannot write source code file");
 		} finally {
-			if (writer != null)
-				try {
-					writer.close();
-				} catch (Exception e) {
-					getLog().warn("Could not close writer: " + e.getMessage());
-				}
+			if (writer != null) try { writer.close(); } catch (Exception e) { getLog().warn("Could not close writer: " + e.getMessage()); }
 		}
 	}
 
 	/**
-	 * Generate a single notice file
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param specification
-	 *            the specification
-	 * @throws MojoExecutionException
-	 *             errors
+	 * Generate The reactor file
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param specification the specification
+	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateReactorFile(String specName, String specPackage, Map<String, Object> specification)
-			throws MojoExecutionException {
+	private void vmGenerateReactorFile(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 
 		boolean supportBinaryData = "true".equalsIgnoreCase((String) specification.get("supportBinaryData"));
 
@@ -625,8 +513,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
 		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
-		Template vilocityTemplate = velocityEngine
-				.getTemplate("templates/Reactor" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/Reactor" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
 
 		// use standard tools
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
@@ -637,16 +524,11 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		ToolContext velocityContext = toolManager.createContext();
 		velocityContext.put("packageName", specPackage);
 		velocityContext.put("specname", specification.get("name"));
-		velocityContext.put("rquireAuth",
-				specification.get("jwtSecurity") == null || "true".equals(specification.get("jwtSecurity")));
-		velocityContext.put("clientRequests",
-				getClientRequests((List<Map<String, Object>>) specification.get("requests"), specification));
-		velocityContext.put("clientNotices",
-				getClientRequests((List<Map<String, Object>>) specification.get("notices"), specification));
-		velocityContext.put("serverRequests",
-				getServerRequests((List<Map<String, Object>>) specification.get("requests"), specification));
-		velocityContext.put("serverNotices",
-				getServerRequests((List<Map<String, Object>>) specification.get("notices"), specification));
+		velocityContext.put("rquireAuth", specification.get("jwtSecurity") == null || "true".equals(specification.get("jwtSecurity")));
+		velocityContext.put("clientRequests", getClientRequests((List<Map<String, Object>>) specification.get("requests"), specification));
+		velocityContext.put("clientNotices", getClientRequests((List<Map<String, Object>>) specification.get("notices"), specification));
+		velocityContext.put("serverRequests", getServerRequests((List<Map<String, Object>>) specification.get("requests"), specification));
+		velocityContext.put("serverNotices", getServerRequests((List<Map<String, Object>>) specification.get("notices"), specification));
 
 		// generate the code
 		StringWriter codeWriter = new StringWriter();
@@ -671,30 +553,19 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 			getLog().warn("Cannot write source code file " + sourceCodePath + ": " + e.getMessage());
 			throw new MojoExecutionException("Cannot write source code file");
 		} finally {
-			if (writer != null)
-				try {
-					writer.close();
-				} catch (Exception e) {
-					getLog().warn("Could not close writer: " + e.getMessage());
-				}
+			if (writer != null) try { writer.close(); } catch (Exception e) { getLog().warn("Could not close writer: " + e.getMessage()); }
 		}
 	}
 
 	/**
-	 * Generate a single notice file
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param specification
-	 *            the specification
-	 * @throws MojoExecutionException
-	 *             errors
+	 * Generate the Actor file
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param specification the specification
+	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateActorFile(String specName, String specPackage, Map<String, Object> specification)
-			throws MojoExecutionException {
+	private void vmGenerateActorFile(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 
 		boolean supportBinaryData = "true".equalsIgnoreCase((String) specification.get("supportBinaryData"));
 
@@ -703,8 +574,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
 		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
-		Template vilocityTemplate = velocityEngine
-				.getTemplate("templates/Actor" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/Actor" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
 
 		// use standard tools
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
@@ -715,17 +585,10 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		ToolContext velocityContext = toolManager.createContext();
 		velocityContext.put("packageName", specPackage);
 		velocityContext.put("specname", specification.get("name"));
-		velocityContext.put("wsproto", specification.get("wsSSL") == null ? "ws"
-				: "true".equalsIgnoreCase((String) specification.get("wsSSL")) ? "wss" : "ws");
-		velocityContext.put("wsport", specification.get("wsPort") == null ? "8080" : specification.get("wsPort"));
-		velocityContext.put("clientRequests",
-				getClientRequests((List<Map<String, Object>>) specification.get("requests"), specification));
-		velocityContext.put("clientNotices",
-				getClientRequests((List<Map<String, Object>>) specification.get("notices"), specification));
-		velocityContext.put("serverRequests",
-				getServerRequests((List<Map<String, Object>>) specification.get("requests"), specification));
-		velocityContext.put("serverNotices",
-				getServerRequests((List<Map<String, Object>>) specification.get("notices"), specification));
+		velocityContext.put("clientRequests", getClientRequests((List<Map<String, Object>>) specification.get("requests"), specification));
+		velocityContext.put("clientNotices", getClientRequests((List<Map<String, Object>>) specification.get("notices"), specification));
+		velocityContext.put("serverRequests", getServerRequests((List<Map<String, Object>>) specification.get("requests"), specification));
+		velocityContext.put("serverNotices", getServerRequests((List<Map<String, Object>>) specification.get("notices"), specification));
 
 		// generate the code
 		StringWriter codeWriter = new StringWriter();
@@ -750,30 +613,19 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 			getLog().warn("Cannot write source code file " + sourceCodePath + ": " + e.getMessage());
 			throw new MojoExecutionException("Cannot write source code file");
 		} finally {
-			if (writer != null)
-				try {
-					writer.close();
-				} catch (Exception e) {
-					getLog().warn("Could not close writer: " + e.getMessage());
-				}
+			if (writer != null) try { writer.close(); } catch (Exception e) { getLog().warn("Could not close writer: " + e.getMessage()); }
 		}
 	}
 
 	/**
-	 * Generate a single notice file
-	 * 
-	 * @param specName
-	 *            the specification name
-	 * @param specPackage
-	 *            the specification package
-	 * @param specification
-	 *            the specification
-	 * @throws MojoExecutionException
-	 *             errors
+	 * Generate the Agent file
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param specification the specification
+	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateAgentFile(String specName, String specPackage, Map<String, Object> specification)
-			throws MojoExecutionException {
+	private void vmGenerateAgentFile(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 
 		boolean supportBinaryData = "true".equalsIgnoreCase((String) specification.get("supportBinaryData"));
 
@@ -782,8 +634,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
 		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
-		Template vilocityTemplate = velocityEngine
-				.getTemplate("templates/Agent" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/Agent" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
 
 		// use standard tools
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
@@ -794,17 +645,10 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		ToolContext velocityContext = toolManager.createContext();
 		velocityContext.put("packageName", specPackage);
 		velocityContext.put("specname", specification.get("name"));
-		velocityContext.put("wsproto", specification.get("wsSSL") == null ? "ws"
-				: "true".equalsIgnoreCase((String) specification.get("wsSSL")) ? "wss" : "ws");
-		velocityContext.put("wsport", specification.get("wsPort") == null ? "8080" : specification.get("wsPort"));
-		velocityContext.put("clientRequests",
-				getClientRequests((List<Map<String, Object>>) specification.get("requests"), specification));
-		velocityContext.put("clientNotices",
-				getClientRequests((List<Map<String, Object>>) specification.get("notices"), specification));
-		velocityContext.put("serverRequests",
-				getServerRequests((List<Map<String, Object>>) specification.get("requests"), specification));
-		velocityContext.put("serverNotices",
-				getServerRequests((List<Map<String, Object>>) specification.get("notices"), specification));
+		velocityContext.put("clientRequests", getClientRequests((List<Map<String, Object>>) specification.get("requests"), specification));
+		velocityContext.put("clientNotices", getClientRequests((List<Map<String, Object>>) specification.get("notices"), specification));
+		velocityContext.put("serverRequests", getServerRequests((List<Map<String, Object>>) specification.get("requests"), specification));
+		velocityContext.put("serverNotices", getServerRequests((List<Map<String, Object>>) specification.get("notices"), specification));
 
 		// generate the code
 		StringWriter codeWriter = new StringWriter();
@@ -829,18 +673,13 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 			getLog().warn("Cannot write source code file " + sourceCodePath + ": " + e.getMessage());
 			throw new MojoExecutionException("Cannot write source code file");
 		} finally {
-			if (writer != null)
-				try {
-					writer.close();
-				} catch (Exception e) {
-					getLog().warn("Could not close writer: " + e.getMessage());
-				}
+			if (writer != null) try { writer.close(); } catch (Exception e) { getLog().warn("Could not close writer: " + e.getMessage()); }
 		}
 	}
 
 	/**
-	 * @param paramatersSpec
-	 *            the parameter spec
+	 * Gather the parameter/members elements
+	 * @param paramatersSpec the parameter specification
 	 * @return the parameters map
 	 */
 	private List<Map<String, String>> getParametersMap(List<Map<String, Object>> paramatersSpec) {
@@ -859,15 +698,13 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	}
 
 	/**
-	 * @param requestsSpec
-	 *            the request spec
-	 * @param specification
-	 *            the specification
+	 * Gather the client requests
+	 * @param requestsSpec the request spec
+	 * @param specification the specification
 	 * @return the client requests
 	 */
 	@SuppressWarnings("unchecked")
-	private List<Map<String, Object>> getClientRequests(List<Map<String, Object>> requestsSpec,
-			Map<String, Object> specification) {
+	private List<Map<String, Object>> getClientRequests(List<Map<String, Object>> requestsSpec, Map<String, Object> specification) {
 		List<Map<String, Object>> clientRequests = new LinkedList<Map<String, Object>>();
 		if (requestsSpec != null) {
 			for (Map<String, Object> requestSpec : requestsSpec) {
@@ -876,11 +713,9 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 				request.put("returns", requestSpec.get("returns"));
 				request.put("returnsJavadoc", requestSpec.get("returnsJavadoc"));
 				request.put("parameters", getParametersMap((List<Map<String, Object>>) requestSpec.get("parameters")));
-				String defTimeout = specification.get("defaultTimeout") == null ? "200"
-						: (String) specification.get("defaultTimeout");
+				String defTimeout = specification.get("defaultTimeout") == null ? "200" : (String) specification.get("defaultTimeout");
 				request.put("defTimeout", defTimeout);
-				if ("true".equals(requestSpec.get("abstractOnCall")))
-					request.put("abstractOnCall", "true");
+				if ("true".equals(requestSpec.get("abstractOnCall"))) request.put("abstractOnCall", "true");
 				if ("client".equals(requestSpec.get("sender")) || "both".equals(requestSpec.get("sender"))) {
 					clientRequests.add(request);
 				}
@@ -890,15 +725,13 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	}
 
 	/**
-	 * @param requestsSpec
-	 *            the request spec
-	 * @param specification
-	 *            the specification
+	 * Gather the server requests
+	 * @param requestsSpec the request spec
+	 * @param specification the specification
 	 * @return the server requests
 	 */
 	@SuppressWarnings("unchecked")
-	private List<Map<String, Object>> getServerRequests(List<Map<String, Object>> requestsSpec,
-			Map<String, Object> specification) {
+	private List<Map<String, Object>> getServerRequests(List<Map<String, Object>> requestsSpec, Map<String, Object> specification) {
 		List<Map<String, Object>> serverRequests = new LinkedList<Map<String, Object>>();
 		if (requestsSpec != null) {
 			for (Map<String, Object> requestSpec : requestsSpec) {
@@ -906,11 +739,9 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 				request.put("name", requestSpec.get("name"));
 				request.put("returns", requestSpec.get("returns"));
 				request.put("parameters", getParametersMap((List<Map<String, Object>>) requestSpec.get("parameters")));
-				String defTimeout = specification.get("defaultTimeout") == null ? "200"
-						: (String) specification.get("defaultTimeout");
+				String defTimeout = specification.get("defaultTimeout") == null ? "200" : (String) specification.get("defaultTimeout");
 				request.put("defTimeout", defTimeout);
-				if ("true".equals(requestSpec.get("abstractOnCall")))
-					request.put("abstractOnCall", "true");
+				if ("true".equals(requestSpec.get("abstractOnCall"))) request.put("abstractOnCall", "true");
 				if ("server".equals(requestSpec.get("sender")) || "both".equals(requestSpec.get("sender"))) {
 					serverRequests.add(request);
 				}
