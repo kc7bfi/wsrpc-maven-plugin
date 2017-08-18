@@ -31,9 +31,9 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
 import net.minidev.json.JSONObject;
-import net.psgglobal.commons.lang.threads.NamedDaemonThreadFactory;
-import net.psgglobal.vicads.toolkit.wsrpc.WsRpcResponseQueue;
-import net.psgglobal.vicads.toolkit.wsrpc.WsRpcThreadPool;
+import net.psgglobal.wsrpc.util.NamedDaemonThreadFactory;
+import net.psgglobal.wsrpc.core.WsRpcResponseQueue;
+import net.psgglobal.wsrpc.core.WsRpcThreadPool;
 import rx.Observable;
 
 /**
@@ -262,25 +262,25 @@ public abstract class ${specname}Actor {
 	}
 
 	/**
-	 * Send an error response
-	 * @param requestId the request id
-	 * @param error the error
+	 * Send a response
+	 * @param requestId the original request id
 	 */
-	public void sendSilentResponse(JSONRPC2Error error, Long requestId) {
+	public void sendSilentResponse(long requestId) {
 		try {
-			wsSession.getBasicRemote().sendText(new JSONRPC2Response(error, requestId).toJSONString());
+			wsSession.getBasicRemote().sendText(new JSONRPC2Response(requestId).toJSONString());
 		} catch (Exception e) {
-			logger.warn("Error sending error response: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+			logger.warn("Error sending response: {}", e.getMessage() == null ? e.toString() : e.getMessage());
 		}
 	}
 
 	/**
 	 * Send a response
-	 * @param response the response
+	 * @param result the method's result object
+	 * @param requestId the original request id
 	 */
-	public void sendSilentResponse(JSONRPC2Response response) {
+	public void sendSilentResponse(Object result, long requestId) {
 		try {
-			wsSession.getBasicRemote().sendText(response.toJSONString());
+			wsSession.getBasicRemote().sendText(new JSONRPC2Response(result, requestId).toJSONString());
 		} catch (Exception e) {
 			logger.warn("Error sending response: {}", e.getMessage() == null ? e.toString() : e.getMessage());
 		}

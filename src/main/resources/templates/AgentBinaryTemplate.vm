@@ -12,11 +12,11 @@ import org.slf4j.LoggerFactory;
 
 import com.auth0.jwt.JWT;
 import net.minidev.json.JSONObject;
-import net.psgglobal.vicads.toolkit.wsrpc.WsRpcResponseQueue;
-import net.psgglobal.vicads.toolkit.wsrpc.WsRpcException;
-import net.psgglobal.vicads.toolkit.wsrpc.WsRpcInternalErrorException;
-import net.psgglobal.vicads.toolkit.wsrpc.WsRpcInvalidRequestException;
-import net.psgglobal.vicads.toolkit.wsrpc.WsRpcInvalidParamsException;
+import net.psgglobal.wsrpc.core.WsRpcResponseQueue;
+import net.psgglobal.wsrpc.core.WsRpcException;
+import net.psgglobal.wsrpc.core.WsRpcInternalErrorException;
+import net.psgglobal.wsrpc.core.WsRpcInvalidRequestException;
+import net.psgglobal.wsrpc.core.WsRpcInvalidParamsException;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 

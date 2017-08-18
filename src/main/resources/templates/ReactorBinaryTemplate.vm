@@ -21,7 +21,7 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2ParseException;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
-import net.psgglobal.vicads.toolkit.wsrpc.WsRpcThreadPool;
+import net.psgglobal.wsrpc.core.WsRpcThreadPool;
 
 /**
  * Generated with Velocity - DO NOT EDIT
