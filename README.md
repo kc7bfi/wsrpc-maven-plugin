@@ -10,7 +10,7 @@ The following example shows how to generate a interfaces defined in the "wsrpc" 
 
 ```
 <plugin>
-	<groupId>net.psgglobal.plugin</groupId>
+	<groupId>net.psgglobal.wsrpc</groupId>
 	<artifactId>wsrpc-maven-plugin</artifactId>
 	<version>1.0-SNAPSHOT</version>
 	<configuration>
