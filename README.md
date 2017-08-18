@@ -4,7 +4,7 @@ WSRPC Maven Plugin to Generate Code
 This maven plugin will generated the needed source files as determined by a WebSocket RPC (wsrpc) specification file.
 The specification file is a JSON file that defines the wsrpc interface that is to be generated. 
 
-For more documentation on wsrpc, see the [main project](/kc7bfi/wsrpc-core).
+For more documentation on wsrpc, see the [main project](https://github.com/kc7bfi/wsrpc-core).
 
 ## Usage
 To use this plugin, add it to your maven project descriptor pom.xml.
