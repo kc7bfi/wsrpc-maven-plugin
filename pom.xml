@@ -8,6 +8,31 @@
 	<packaging>maven-plugin</packaging>
 
 	<name>WebSocket RPC Maven Plugin</name>
+	<description>This is the maven plugin to generate files for the WebSocket (wsrpc) project.</description>
+	<url>https://github.com/kc7bfi/wsrpc-maven-plugin</url>
+
+	<licenses>
+		<license>
+			<name>The GNU Lesser General Public License, Version 3.0</name>
+			<url>http://www.gnu.org/licenses/lgpl-3.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>David R. Robison</name>
+			<email>david.robison@psgglobal.net</email>
+			<organization>Prometheus Security Group Global</organization>
+			<organizationUrl>http://www.psggloba.net</organizationUrl>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>scm:git:git://github.com/kc7bfi/wsrpc-maven-plugin</connection>
+		<developerConnection>scm:git:ssh://github.com:kc7bfi/wsrpc-maven-plugin.git</developerConnection>
+		<url>http://github.com/kc7bfi/wsrpc-maven-plugin</url>
+	</scm>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -103,6 +128,46 @@
 						<id>help-goal</id>
 						<goals>
 							<goal>helpmojo</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>2.2.1</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.9.1</version>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.5</version>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
 						</goals>
 					</execution>
 				</executions>
