@@ -45,11 +45,11 @@ public abstract class ${specname}Actor {
 	private Logger logger = LoggerFactory.getLogger(getClass().getName());
 	private static AtomicLong LastRequestId = new AtomicLong();
 
-	private final WsRpcResponseQueue responses = new WsRpcResponseQueue();
 	private ClientManager client;
 	private final URI wsrpcServerUri;
 	private ClientManager.ReconnectHandler reconnectHandler;
 
+	protected final WsRpcResponseQueue responses = new WsRpcResponseQueue();
 	protected SslEngineConfigurator sslEngineConfigurator;
 	protected Session wsSession;
 	protected final MutableBoolean authenticated = new MutableBoolean(false);
@@ -464,7 +464,7 @@ public abstract class ${specname}Actor {
 	/**
 	 * @return the next request id
 	 */
-	public static long lastRequestId() {
+	protected static long nextRequestId() {
 		return LastRequestId.incrementAndGet();
 	}
 }

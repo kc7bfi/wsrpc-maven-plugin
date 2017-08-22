@@ -379,7 +379,7 @@ public abstract class ${specname}Agent {
 	/**
 	 * @return the next request id
 	 */
-	public long lastRequestId() {
+	protected long nextRequestId() {
 		return lastRequestId.incrementAndGet();
 	}
 }
