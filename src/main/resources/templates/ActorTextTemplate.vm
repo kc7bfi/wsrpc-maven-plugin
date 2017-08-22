@@ -45,7 +45,7 @@ import rx.Observable;
  */
 public abstract class ${specname}Actor {
 	private Logger logger = LoggerFactory.getLogger(getClass().getName());
-	private static AtomicLong LastReqId = new AtomicLong();
+	private static AtomicLong LastRequestId = new AtomicLong();
 
 	private final WsRpcResponseQueue responses = new WsRpcResponseQueue();
 	private ClientManager client;
@@ -194,7 +194,7 @@ public abstract class ${specname}Actor {
 		try {
 			Map<String, Object> params = new HashMap<>();
 			params.put("token", getJWTAuthenticationToken());
-			JSONRPC2Request request = new JSONRPC2Request("Authenticate", params, LastReqId.incrementAndGet());
+			JSONRPC2Request request = new JSONRPC2Request("Authenticate", params, LastRequestId.incrementAndGet());
 			wsSession.getBasicRemote().sendText(request.toJSONString());
 			responses.onResponse(request.getID(), 10 * 1000).subscribe(
 					authResponse -> {
@@ -361,7 +361,7 @@ public abstract class ${specname}Actor {
 					new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Not connected"), 0),
 			});
 		}
-		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end LastReqId.incrementAndGet());
+		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end LastRequestId.incrementAndGet());
 		wsSession.getBasicRemote().sendText(request.toJSONString());
 		return responses.onResponse(request.getRequestId(), timeout);
 	}
@@ -436,8 +436,8 @@ public abstract class ${specname}Actor {
 	/**
 	 * @return the next request id
 	 */
-	public long lastRequestId() {
-		return lastRequestId.incrementAndGet();
+	public static long lastRequestId() {
+		return LastRequestId.incrementAndGet();
 	}
 
 }
