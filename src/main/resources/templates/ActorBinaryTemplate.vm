@@ -460,4 +460,11 @@ public abstract class ${specname}Actor {
 	}
 	
 #end
+
+	/**
+	 * @return the next request id
+	 */
+	public long lastRequestId() {
+		return lastRequestId..incrementAndGet();
+	}
 }

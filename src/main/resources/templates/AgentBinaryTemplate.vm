@@ -375,4 +375,11 @@ public abstract class ${specname}Agent {
 	}
 	
 #end
+
+	/**
+	 * @return the next request id
+	 */
+	public long lastRequestId() {
+		return lastRequestId..incrementAndGet();
+	}
 }
