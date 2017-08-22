@@ -332,6 +332,6 @@ public abstract class ${specname}Agent {
 	 * @return the next request id
 	 */
 	public long lastRequestId() {
-		return lastRequestId..incrementAndGet();
+		return lastRequestId.incrementAndGet();
 	}
 }
