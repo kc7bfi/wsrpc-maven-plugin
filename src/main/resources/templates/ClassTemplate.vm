@@ -94,6 +94,11 @@ public class $display.capitalize($className) {
 		json.setLength(json.length() - 1);
 		return json.append("}").toString();
 	}
+	
+	@Override
+	public String toString() {
+		return toJSONString();
+	}
 
 #foreach ($member in $members)
 #if ($member.javadoc)
