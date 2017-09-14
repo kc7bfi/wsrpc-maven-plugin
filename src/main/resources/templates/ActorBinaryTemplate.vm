@@ -263,6 +263,13 @@ public abstract class ${specname}Actor {
 		logger.warn("WebSocket error: {}", error.getMessage() == null ? error.toString() : error.getMessage());
 		error.printStackTrace();
 	}
+	
+	/**
+	 * Override this method to process the authenticated event
+	 * @param success true if the authentication was successful
+	 */
+	public void onAuthenticated(boolean success) {
+	}
 
 	/**
 	 * Send an error response
