@@ -542,6 +542,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		velocityContext.put("packageName", specPackage);
 		velocityContext.put("specname", specification.get("name"));
 		velocityContext.put("rquireAuth", specification.get("jwtSecurity") == null || "true".equals(specification.get("jwtSecurity")));
+		velocityContext.put("synchronized", specification.getOrDefault("synchronized", "none"));
 		velocityContext.put("clientRequests", getClientRequests((List<Map<String, Object>>) specification.get("requests"), specification));
 		velocityContext.put("clientNotices", getClientRequests((List<Map<String, Object>>) specification.get("notices"), specification));
 		velocityContext.put("serverRequests", getServerRequests((List<Map<String, Object>>) specification.get("requests"), specification));
@@ -602,6 +603,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		ToolContext velocityContext = toolManager.createContext();
 		velocityContext.put("packageName", specPackage);
 		velocityContext.put("specname", specification.get("name"));
+		velocityContext.put("synchronized", specification.getOrDefault("synchronized", "none"));
 		velocityContext.put("clientRequests", getClientRequests((List<Map<String, Object>>) specification.get("requests"), specification));
 		velocityContext.put("clientNotices", getClientRequests((List<Map<String, Object>>) specification.get("notices"), specification));
 		velocityContext.put("serverRequests", getServerRequests((List<Map<String, Object>>) specification.get("requests"), specification));
