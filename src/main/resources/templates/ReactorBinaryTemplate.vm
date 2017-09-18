@@ -64,6 +64,9 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 	@OnOpen
 	public void onOpen(Session wsSession) {
 		logger.debug("WsSession {} opened", wsSession.getId());
+#if ($maxBinaryMessageSize != "0")
+		wsSession.setMaxTextMessageBufferSize($maxBinaryMessageSize);
+#end
 		T managedAgent = createAgent(wsSession);
 		managedAgents.put(wsSession.getId(), managedAgent);
 		managedAgent.onAgentAdded(managedAgent);

@@ -215,6 +215,9 @@ public abstract class ${specname}Actor {
 	public void onOpen(Session wsSession) {
 		logger.info("Connected on session {}", wsSession.getId());
 		this.wsSession = wsSession;
+#if ($maxBinaryMessageSize != "0")
+		this.wsSession.setMaxBinaryMessageBufferSize($maxBinaryMessageSize);
+#end
 		String userJwtToken = getJWTAuthenticationToken();
 
 		// send authentication request
