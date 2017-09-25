@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.websocket.CloseReason;
+import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -199,10 +200,14 @@ public abstract class ${specname}Actor {
 #end
 		String userJwtToken = getJWTAuthenticationToken();
 
-		// send authentication request
 		try {
+			if (userJwtToken == null) {
+				logger.info("No JWT authentication code available");
+				wsSession.close(new CloseReason(CloseCodes.TRY_AGAIN_LATER, "Not Authenticated"));
+				return;
+			}
 			Map<String, Object> params = new HashMap<>();
-			params.put("token", getJWTAuthenticationToken());
+			params.put("token", userJwtToken);
 			JSONRPC2Request request = new JSONRPC2Request("Authenticate", params, LastRequestId.incrementAndGet());
 			wsSession.getBasicRemote().sendText(request.toJSONString());
 			responses.onResponse(request.getID(), 10 * 1000).subscribe(
