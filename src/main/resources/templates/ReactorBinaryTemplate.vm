@@ -134,7 +134,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 
 				// Verify that we have been authenticated
 				if (requireAuthentication && !request.getMethod().equals("Authenticate") && !managedAgent.isAuthenticated()) {
-					logger.warn("Session {} has not been authenticated", wsSession.getId());
+					logger.debug("Session {} has not been authenticated", wsSession.getId());
 					managedAgent.sendInvalidRequest("User not authenticated", (Long)request.getID());
 					return;
 				}
