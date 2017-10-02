@@ -47,6 +47,7 @@ public class $display.capitalize($className) {
 	 * @return the list
 	 */
 	public static $display.capitalize($className) parse(String json) {
+		if (json == null) return null;
 		try {
 			JSONParser parser = new JSONParser(JSONParser.MODE_PERMISSIVE);
 			JSONObject jsonObj = (JSONObject)parser.parse(json);
@@ -63,6 +64,7 @@ public class $display.capitalize($className) {
 	 * @return the list
 	 */
 	public static $display.capitalize($className) parse(JSONObject jsonObj) {
+		if (jsonObj == null) return null;
 		try {
 			$display.capitalize($className) newObj = new $display.capitalize($className)();
 #foreach ($member in $members)

@@ -68,7 +68,11 @@ public class $display.capitalize($noticeName)Notice {
 	public String toJSONString() {
 		Map<String, Object> paramsMap = new HashMap<>();
 #foreach ($parameter in $parameters)
+#if ($parameter.type.indexOf(".") > 0)
+		if ($parameter.name != null) paramsMap.put("$parameter.name", $parameter.name);
+#else
 		paramsMap.put("$parameter.name", $parameter.name);
+#end
 #end
 		return new JSONRPC2Request("$display.capitalize($noticeName)", paramsMap, requestId).toJSONString();
 	}

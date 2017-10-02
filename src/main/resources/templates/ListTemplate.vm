@@ -39,6 +39,7 @@ public class $display.capitalize($listName) {
 	 * @return the list
 	 */
 	public static $display.capitalize($listName) parse(String json) {
+		if (json == null) return null;
 		try {
 			JSONParser parser = new JSONParser(JSONParser.MODE_PERMISSIVE);
 			JSONObject jsonObj = (JSONObject)parser.parse(json);
@@ -55,6 +56,7 @@ public class $display.capitalize($listName) {
 	 * @return the list
 	 */
 	public static $display.capitalize($listName) parse(JSONObject jsonObj) {
+		if (jsonObj == null) return null;
 		try {
   			$display.capitalize($listName) newObj = new $display.capitalize($listName)();
     		JSONArray items = (JSONArray) jsonObj.get("$item");
