@@ -80,7 +80,9 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 		logger.debug("WsSession {} closed", wsSession.getId());
 		T managedAgent = managedAgents.remove(wsSession.getId());
 		if (managedAgent != null) managedAgent.onAgentRemoved(managedAgent);
+#if ($synchronized == "server" || $synchronized == "both")
 		threadPool.shutdown();
+#end
 	}
 
 	/**
