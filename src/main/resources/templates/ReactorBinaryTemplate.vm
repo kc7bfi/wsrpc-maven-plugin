@@ -41,7 +41,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 #if ($synchronized == "server" || $synchronized == "both")
 	private ExecutorService threadPool = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
 #else
-	private ExecutorService threadPool = Executors.newCachedThreadPool(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
+	private static ExecutorService threadPool = Executors.newCachedThreadPool(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
 #end
 
 	/**
