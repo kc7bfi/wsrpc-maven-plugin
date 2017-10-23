@@ -1,0 +1,18 @@
+/**
+ * Generated with Velocity - DO NOT EDIT
+ *
+ * This class is the client side Actor
+ *
+ * This class supports text communications via the WebSocket
+ */
+export interface $display.capitalize($className) {
+#foreach ($member in $members)
+#if (($member.type == "int") || ($member.type == "long"))
+	${member.name}: number;
+#elseif ($member.type == "boolean")
+	${member.name}: boolean;
+#else
+	${member.name}: string;
+#end
+#end
+}

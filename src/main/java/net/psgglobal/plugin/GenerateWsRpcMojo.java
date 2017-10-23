@@ -55,11 +55,14 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	@Parameter(defaultValue = "${project.basedir}/src/main/resources/wsrpc", property = "inputDir", required = true)
 	private File inputDir;
 
-	@Parameter(defaultValue = "${project.build.directory}/generated-sources/wsrpc", property = "outputDir", required = true)
+	@Parameter(defaultValue = "${project.build.directory}/generated-sources/wsrpc/java", property = "outputDir", required = true)
 	private File outputDir;
 
 	@Parameter(defaultValue = "${project}")
 	private MavenProject project;
+
+	@Parameter(defaultValue = "java")
+	private String targetLang;
 
 	/**
 	 * Execute the plugin
@@ -72,6 +75,11 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		// process each specification file
 		if (inputDir == null) throw new MojoExecutionException("Cannot find inputDir");
 		if (!inputDir.exists()) throw new MojoExecutionException("inputDir does not exist");
+
+		getLog().info("inputDir = " + inputDir.getAbsolutePath());
+		getLog().info("outputDir = " + outputDir.getAbsolutePath());
+		getLog().info("targetLang = " + targetLang);
+
 		for (File specificationFile : inputDir.listFiles()) {
 
 			// read the specification file
@@ -101,16 +109,29 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 			String specName = (String) specification.get("name");
 			String specPackage = (String) specification.get("package");
 
-			vmGenerateConstsFiles(specName, specPackage, specification);
-			vmGenerateClassFiles(specName, specPackage, specification);
-			vmGenerateListFiles(specName, specPackage, specification);
-			vmGenerateNoticeFiles(specName, specPackage, specification);
-			vmGenerateRequestFiles(specName, specPackage, specification);
-			vmGenerateActorFile(specName, specPackage, specification);
-			vmGenerateReactorFile(specName, specPackage, specification);
-			vmGenerateAgentFile(specName, specPackage, specification);
+			if ("java".equalsIgnoreCase(targetLang)) {
+				javaGenerateConstsFiles(specName, specPackage, specification);
+				javaGenerateClassFiles(specName, specPackage, specification);
+				javaGenerateListFiles(specName, specPackage, specification);
+				javaGenerateNoticeFiles(specName, specPackage, specification);
+				javaGenerateRequestFiles(specName, specPackage, specification);
+				javaGenerateActorFile(specName, specPackage, specification);
+				javaGenerateReactorFile(specName, specPackage, specification);
+				javaGenerateAgentFile(specName, specPackage, specification);
 
-			project.addCompileSourceRoot(outputDir.getAbsolutePath());
+				project.addCompileSourceRoot(outputDir.getAbsolutePath());
+			}
+
+			if ("ts".equalsIgnoreCase(targetLang)) {
+				//javaGenerateConstsFiles(specName, specPackage, specification);
+				//tsGenerateClassFiles(specName, specPackage, specification);
+				//javaGenerateListFiles(specName, specPackage, specification);
+				//javaGenerateNoticeFiles(specName, specPackage, specification);
+				//javaGenerateRequestFiles(specName, specPackage, specification);
+				tsGenerateActorFile(specName, specPackage, specification);
+				//javaGenerateReactorFile(specName, specPackage, specification);
+				//javaGenerateAgentFile(specName, specPackage, specification);
+			}
 		}
 	}
 
@@ -151,6 +172,20 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	}
 
 	/**
+	 * Create the directories for the generated files
+	 * @param specName the specification name
+	 * @param specPackage the package
+	 * @return the package path
+	 */
+	private String createSpecDirs(String specName) {
+		StringBuilder pathName = new StringBuilder(outputDir.getAbsolutePath() + "/");
+		pathName.append(specName + "/");
+		File pathFile = new File(pathName.toString());
+		pathFile.mkdirs();
+		return pathName.toString();
+	}
+
+	/**
 	 * Generate all the classes files
 	 * @param specName the specification name
 	 * @param specPackage the specification package
@@ -158,11 +193,11 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @throws MojoExecutionException Errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateClassFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
+	private void javaGenerateClassFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> claszs = (List<Map<String, Object>>) specification.get("classes");
 		if (claszs != null) {
 			for (Map<String, Object> clasz : claszs) {
-				vmGenerateClassFile(specName, specPackage, clasz);
+				javaGenerateClassFile(specName, specPackage, clasz);
 			}
 		}
 	}
@@ -175,14 +210,14 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateClassFile(String specName, String specPackage, Map<String, Object> classSpecification) throws MojoExecutionException {
+	private void javaGenerateClassFile(String specName, String specPackage, Map<String, Object> classSpecification) throws MojoExecutionException {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
 		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
 		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
-		Template vilocityTemplate = velocityEngine.getTemplate("templates/ClassTemplate.vm");
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/ClassTemplate.vm");
 
 		// use standard tools
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
@@ -231,11 +266,11 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @throws MojoExecutionException Errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateConstsFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
+	private void javaGenerateConstsFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> claszs = (List<Map<String, Object>>) specification.get("consts");
 		if (claszs != null) {
 			for (Map<String, Object> clasz : claszs) {
-				vmGenerateConstsFile(specName, specPackage, clasz);
+				javaGenerateConstsFile(specName, specPackage, clasz);
 			}
 		}
 	}
@@ -248,14 +283,14 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateConstsFile(String specName, String specPackage, Map<String, Object> constSpecification) throws MojoExecutionException {
+	private void javaGenerateConstsFile(String specName, String specPackage, Map<String, Object> constSpecification) throws MojoExecutionException {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
 		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
 		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
-		Template vilocityTemplate = velocityEngine.getTemplate("templates/ConstsTemplate.vm");
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/ConstsTemplate.vm");
 
 		// use standard tools
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
@@ -304,11 +339,11 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @throws MojoExecutionException Errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateListFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
+	private void javaGenerateListFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> lists = (List<Map<String, Object>>) specification.get("lists");
 		if (lists != null) {
 			for (Map<String, Object> list : lists) {
-				vmGenerateListFile(specName, specPackage, list);
+				javaGenerateListFile(specName, specPackage, list);
 			}
 		}
 	}
@@ -320,14 +355,14 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @param listSpecification the list specification
 	 * @throws MojoExecutionException errors
 	 */
-	private void vmGenerateListFile(String specName, String specPackage, Map<String, Object> listSpecification) throws MojoExecutionException {
+	private void javaGenerateListFile(String specName, String specPackage, Map<String, Object> listSpecification) throws MojoExecutionException {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
 		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
 		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
-		Template vilocityTemplate = velocityEngine.getTemplate("templates/ListTemplate.vm");
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/ListTemplate.vm");
 
 		// use standard tools
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
@@ -377,11 +412,11 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @throws MojoExecutionException Errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateNoticeFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
+	private void javaGenerateNoticeFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> notices = (List<Map<String, Object>>) specification.get("notices");
 		if (notices != null) {
 			for (Map<String, Object> notice : notices) {
-				vmGenerateNoticeFile(specName, specPackage, notice);
+				javaGenerateNoticeFile(specName, specPackage, notice);
 			}
 		}
 	}
@@ -394,14 +429,14 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateNoticeFile(String specName, String specPackage, Map<String, Object> noticeSpecification) throws MojoExecutionException {
+	private void javaGenerateNoticeFile(String specName, String specPackage, Map<String, Object> noticeSpecification) throws MojoExecutionException {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
 		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
 		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
-		Template vilocityTemplate = velocityEngine.getTemplate("templates/NoticeTemplate.vm");
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/NoticeTemplate.vm");
 
 		// use standard tools
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
@@ -450,10 +485,10 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @throws MojoExecutionException Errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateRequestFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
+	private void javaGenerateRequestFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> requests = (List<Map<String, Object>>) specification.get("requests");
 		for (Map<String, Object> request : requests) {
-			vmGenerateRequestFile(specName, specPackage, request);
+			javaGenerateRequestFile(specName, specPackage, request);
 		}
 	}
 
@@ -465,14 +500,14 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateRequestFile(String specName, String specPackage, Map<String, Object> requestSpecification) throws MojoExecutionException {
+	private void javaGenerateRequestFile(String specName, String specPackage, Map<String, Object> requestSpecification) throws MojoExecutionException {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
 		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
 		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
-		Template vilocityTemplate = velocityEngine.getTemplate("templates/RequestTemplate.vm");
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/RequestTemplate.vm");
 
 		// use standard tools
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
@@ -521,7 +556,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateReactorFile(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
+	private void javaGenerateReactorFile(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 
 		boolean supportBinaryData = "true".equalsIgnoreCase((String) specification.get("supportBinaryData"));
 
@@ -530,7 +565,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
 		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
-		Template vilocityTemplate = velocityEngine.getTemplate("templates/Reactor" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/Reactor" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
 
 		// use standard tools
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
@@ -585,7 +620,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateActorFile(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
+	private void javaGenerateActorFile(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 
 		boolean supportBinaryData = "true".equalsIgnoreCase((String) specification.get("supportBinaryData"));
 
@@ -594,7 +629,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
 		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
-		Template vilocityTemplate = velocityEngine.getTemplate("templates/Actor" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/Actor" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
 
 		// use standard tools
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
@@ -648,7 +683,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 * @throws MojoExecutionException errors
 	 */
 	@SuppressWarnings("unchecked")
-	private void vmGenerateAgentFile(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
+	private void javaGenerateAgentFile(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 
 		boolean supportBinaryData = "true".equalsIgnoreCase((String) specification.get("supportBinaryData"));
 
@@ -657,7 +692,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
 		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
-		Template vilocityTemplate = velocityEngine.getTemplate("templates/Agent" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/Agent" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
 
 		// use standard tools
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
@@ -774,5 +809,153 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 			}
 		}
 		return serverRequests;
+	}
+
+	/**
+	 * Create a typescript name format
+	 * @param name the name
+	 * @return the new name
+	 */
+	private String typescriptNameFormat(String name) {
+		String newname = name.replaceAll("([A-Z]+)([A-Z])", "-$1-$2");
+		newname = newname.replaceAll("([A-Z])([a-z])", "-$1$2");
+		newname = newname.replaceAll("--", "-");
+		if (newname.startsWith("-")) newname = newname.substring(1);
+		return newname.toLowerCase();
+	}
+
+	/**
+	 * Generate all the classes files
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param specification the specification
+	 * @throws MojoExecutionException Errors
+	 */
+	@SuppressWarnings("unchecked")
+	private void tsGenerateClassFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
+		List<Map<String, Object>> claszs = (List<Map<String, Object>>) specification.get("classes");
+		if (claszs != null) {
+			for (Map<String, Object> clasz : claszs) {
+				tsGenerateClassFile(specName, specPackage, clasz);
+			}
+		}
+	}
+
+	/**
+	 * Generate a single class file
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param classSpecification the class specification
+	 * @throws MojoExecutionException errors
+	 */
+	@SuppressWarnings("unchecked")
+	private void tsGenerateClassFile(String specName, String specPackage, Map<String, Object> classSpecification) throws MojoExecutionException {
+
+		// initialize the Velocity engine
+		VelocityEngine velocityEngine = new VelocityEngine();
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
+		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.init();
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/ts/ClassTemplate.vm");
+
+		// use standard tools
+		Map<String, Object> toolProperties = new HashMap<String, Object>();
+		toolProperties.put("engine", velocityEngine);
+		ToolManager toolManager = new ToolManager(true, true);
+
+		// set up the Velocity context model
+		ToolContext velocityContext = toolManager.createContext();
+		velocityContext.put("packageName", specPackage);
+		velocityContext.put("className", classSpecification.get("name"));
+		velocityContext.put("classJavadoc", classSpecification.get("javadoc"));
+		velocityContext.put("members", getParametersMap((List<Map<String, Object>>) classSpecification.get("members")));
+
+		// generate the code
+		StringWriter codeWriter = new StringWriter();
+		vilocityTemplate.merge(velocityContext, codeWriter);
+
+		// save the code
+		String sourceCodePath = createSpecDirs(specName) + typescriptNameFormat(capitalize((String) classSpecification.get("name"))) + ".model.ts";
+		File claszCodeFile = new File(sourceCodePath);
+		try {
+			claszCodeFile.createNewFile();
+		} catch (IOException e) {
+			getLog().warn("Cannot create source code file " + sourceCodePath);
+			throw new MojoExecutionException("Cannot create source code file");
+		}
+		FileWriter writer = null;
+		try {
+			writer = new FileWriter(claszCodeFile);
+			writer.write(codeWriter.toString());
+			getLog().info("Wrote " + sourceCodePath);
+		} catch (IOException e) {
+			getLog().warn("Cannot write source code file " + sourceCodePath + ": " + e.getMessage());
+			throw new MojoExecutionException("Cannot write source code file");
+		} finally {
+			if (writer != null) try { writer.close(); } catch (Exception e) { getLog().warn("Could not close writer: " + e.getMessage()); }
+		}
+	}
+
+	/**
+	 * Generate the Actor file
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param specification the specification
+	 * @throws MojoExecutionException errors
+	 */
+	@SuppressWarnings("unchecked")
+	private void tsGenerateActorFile(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
+
+		boolean supportBinaryData = "true".equalsIgnoreCase((String) specification.get("supportBinaryData"));
+
+		// initialize the Velocity engine
+		VelocityEngine velocityEngine = new VelocityEngine();
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
+		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.init();
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/ts/Actor" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
+
+		// use standard tools
+		Map<String, Object> toolProperties = new HashMap<String, Object>();
+		toolProperties.put("engine", velocityEngine);
+		ToolManager toolManager = new ToolManager(true, true);
+
+		// set up the Velocity context model
+		ToolContext velocityContext = toolManager.createContext();
+		velocityContext.put("packageName", specPackage);
+		velocityContext.put("specname", specification.get("name"));
+		velocityContext.put("synchronized", specification.getOrDefault("synchronized", "none"));
+		velocityContext.put("maxBinaryMessageSize", specification.getOrDefault("maxBinaryMessageSize", "0"));
+		velocityContext.put("maxTextMessageSize", specification.getOrDefault("maxTextMessageSize", "0"));
+		velocityContext.put("clientRequests", getClientRequests((List<Map<String, Object>>) specification.get("requests"), specification));
+		velocityContext.put("clientNotices", getClientRequests((List<Map<String, Object>>) specification.get("notices"), specification));
+		velocityContext.put("serverRequests", getServerRequests((List<Map<String, Object>>) specification.get("requests"), specification));
+		velocityContext.put("serverNotices", getServerRequests((List<Map<String, Object>>) specification.get("notices"), specification));
+
+		// generate the code
+		StringWriter codeWriter = new StringWriter();
+		vilocityTemplate.merge(velocityContext, codeWriter);
+
+		// save the code
+		String dirPath = createSpecDirs(specName);
+		String sourceCodePath = dirPath + typescriptNameFormat(specification.get("name").toString()) + ".actor.ts";
+		File codeFile = new File(sourceCodePath);
+		try {
+			codeFile.createNewFile();
+		} catch (IOException e) {
+			getLog().warn("Cannot create source code file " + sourceCodePath);
+			throw new MojoExecutionException("Cannot create source code file");
+		}
+		FileWriter writer = null;
+		try {
+			writer = new FileWriter(codeFile);
+			writer.write(codeWriter.toString());
+			getLog().info("Wrote " + sourceCodePath);
+		} catch (IOException e) {
+			getLog().warn("Cannot write source code file " + sourceCodePath + ": " + e.getMessage());
+			throw new MojoExecutionException("Cannot write source code file");
+		} finally {
+			if (writer != null) try { writer.close(); } catch (Exception e) { getLog().warn("Could not close writer: " + e.getMessage()); }
+		}
 	}
 }

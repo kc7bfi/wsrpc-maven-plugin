@@ -1,0 +1,89 @@
+/**
+ * Generated with Velocity - DO NOT EDIT
+ *
+ * This class is the client side Actor
+ *
+ * This class supports text communications via the WebSocket
+ */
+import { Inject, Injectable, OnDestroy } from '@angular/core';
+
+@Injectable()
+export class ${specname}Actor implements OnDestroy {
+  private ws; // The websocket
+  private lastId: number = 0; // the last request id sent
+  private authenticated: boolean = false;
+  private idAuthRequest: number;
+  
+#foreach ($request in $clientRequests)
+  private id${request.name}Request: number
+#end
+
+  /**
+   * Connect to the server
+   * @param serverUrl  the server URL
+   * @param jwtAuthentication the JWT authentication token
+   */
+  connect(serverUrl: string, jwtAuthentication: string) {
+    this.ws = new WebSocket(serverUrl);
+    this.ws.onmessage = this.onWsMessage.bind(this);
+    this.ws.onerror = this.onWsError.bind(this);
+    this.ws.onclose = this.onWsClose.bind(this);
+
+    this.ws.onopen = function() {
+      try {
+        this.idAuthRequest = this.wsSend('Authenticate', { token: jwtAuthentication });
+      } catch (err) {
+        console.log("Error sending authentication: " + err);
+        if (this.onAutehticated) if (this.onError) this.onError(err);
+      }
+    }.bind(this);
+  };
+
+  private onWsMessage(msg: MessageEvent) {
+    let parsedMessage = JSON.parse(msg.data);
+    if (parsedMessage.result && parsedMessage.id === this.idAuthRequest) {
+      authenticated = !parsedMessage.error;
+      if (this.onAuthResponse) this.onAuthResponse(parsedMessage);
+    }
+#foreach ($request in $clientRequests)
+    else if (parsedMessage.result && parsedMessage.id === this.id${request.name}Request) if (this.on${request.name}Response) this.on${request.name}Response(parsedMessage);
+#end
+#foreach ($notice in $serverNotices)
+    else if (!parsedMessage.result && parsedMessage.method === '${notice.name}') if (this.on${notice.name}) this.on${notice.name}(parsedMessage);
+#end
+    else console.log("Received unknown message " + msg.data);
+  };
+
+  private onWsError(error) {
+  	ws.close();
+  };
+
+  private onWsClose() {
+    authenticated = false;
+  	ws.close();
+  };
+
+  private wsSend(method: string, params) {
+    let jsonrpc = {
+      "jsonrpc": "2.0",
+      "method": method,
+      "params": params,
+      "id": ++this.lastId
+    }
+    let jsonMessage = JSON.stringify(jsonrpc);
+    this.ws.send(jsonMessage);
+    return jsonrpc.id;
+  };
+
+#foreach ($request in $clientRequests)
+  ${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name#if($foreach.hasNext), #end#end) {
+    if (!authenticated.booleanValue()) return;
+    request = {};
+#foreach ($parameter in $request.parameters)
+	request.$parameter.name = $parameter.name;
+#end
+    id${request.name}Request = this.wsSend('${request.name}', request);
+  }
+
+#end
+}
