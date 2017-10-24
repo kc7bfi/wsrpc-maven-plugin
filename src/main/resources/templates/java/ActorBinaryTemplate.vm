@@ -21,6 +21,7 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.glassfish.tyrus.client.ClientManager;
 import org.glassfish.tyrus.client.ClientProperties;
@@ -160,7 +161,7 @@ public abstract class ${specname}Actor {
 				return authenticated.booleanValue();
 			}
 		} catch (Throwable e) {
-			logger.warn("Error connecting to server {}: {}", wsrpcServerUri.toString(), e.getMessage() == null ? e.toString() : e.getMessage()); e.printStackTrace();
+			logger.warn("Error connecting to server {}: {}", wsrpcServerUri.toString(), ExceptionUtils.getMessage(e)); e.printStackTrace();
 			return false;
 		}
 	}
@@ -173,7 +174,7 @@ public abstract class ${specname}Actor {
 		try {
 			if (wsSession != null) wsSession.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "Operator request"));
 		} catch (IOException e) {
-			logger.warn("Error closing connection: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+			logger.warn("Error closing connection: {}", ExceptionUtils.getMessage(e));
 		}
 		wsSession = null;
 		client = null;
@@ -249,7 +250,7 @@ public abstract class ${specname}Actor {
 					}
 					);
 		} catch (IOException e) {
-			logger.warn("Error sending authenticate request: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+			logger.warn("Error sending authenticate request: {}", ExceptionUtils.getMessage(e));
 			authenticated.setValue(false);
 			authenticated.notify();
 			close();
@@ -312,7 +313,7 @@ public abstract class ${specname}Actor {
 		try {
 			wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(requestId).toJSONString()));
 		} catch (Exception e) {
-			logger.warn("Error sending response: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
 	}
 
@@ -325,7 +326,7 @@ public abstract class ${specname}Actor {
 		try {
 			wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(result, requestId).toJSONString()));
 		} catch (Exception e) {
-			logger.warn("Error sending response: {}", e.getMessage() == null ? e.toString() : e.getMessage());
+			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
 	}
 
@@ -370,9 +371,9 @@ public abstract class ${specname}Actor {
 			responses.addResponse((Long)response.getID(), response);
 			return;
 		} catch (JSONRPC2ParseException e) {
-			if (logger.isDebugEnabled()) logger.debug("Error processing response message {}: {}", json, e.getMessage() == null ? e.toString() : e.getMessage());
+			if (logger.isDebugEnabled()) logger.debug("Error processing response message {}: {}", json, ExceptionUtils.getMessage(e));
 		} catch (Throwable e) {
-			logger.warn("Error processing response message {}: {}", json, e.getMessage() == null ? e.toString() : e.getMessage());
+			logger.warn("Error processing response message {}: {}", json, ExceptionUtils.getMessage(e));
 		}
 
 		// process the message
@@ -389,9 +390,9 @@ public abstract class ${specname}Actor {
 
 			return;
 		} catch (JSONRPC2ParseException e) {
-			if (logger.isDebugEnabled()) logger.debug("Error processing request message {}: {}", json, e.getMessage() == null ? e.toString() : e.getMessage());
+			if (logger.isDebugEnabled()) logger.debug("Error processing request message {}: {}", json, ExceptionUtils.getMessage(e));
 		} catch (Throwable e) {
-			logger.warn("Error processing request message {}: {}", json, e.getMessage() == null ? e.toString() : e.getMessage());
+			logger.warn("Error processing request message {}: {}", json, ExceptionUtils.getMessage(e));
 		}
 	}
 

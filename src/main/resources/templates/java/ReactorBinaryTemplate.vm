@@ -13,6 +13,7 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,13 +153,13 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 #end
 				return;
 			} catch (JSONRPC2ParseException ee) {
-				if (logger.isDebugEnabled()) logger.debug("Error processing request message {}: {}", json, ee.getMessage() == null ? ee.toString() : ee.getMessage());
+				if (logger.isDebugEnabled()) logger.debug("Error processing request message {}: {}", json, ExceptionUtils.getMessage(ee));
 			} catch (Throwable ee) {
-				logger.warn("Error processing request message {}: {}", json, ee.getMessage() == null ? ee.toString() : ee.getMessage()); ee.printStackTrace();
+				logger.warn("Error processing request message {}: {}", json, ExceptionUtils.getMessage(ee)); ee.printStackTrace();
 				if (request != null) managedAgent.sendSilentInternalError(ee.getMessage(), (Long)request.getID());
 			}
 		} catch (Throwable e) {
-			logger.warn("Error processing response message {}: {}", json, e.getMessage() == null ? e.toString() : e.getMessage()); e.printStackTrace();
+			logger.warn("Error processing response message {}: {}", json, ExceptionUtils.getMessage(e)); e.printStackTrace();
 		}
 		
 		logger.warn("unknown message: {}", json);
@@ -176,13 +177,13 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 			managedAgent.sendResponse(true, (Long)request.getID());
 			logger.debug("WsSession {} authenticated", managedAgent.getWsSessionId());
 		} catch (JWTVerificationException e) {
-			logger.warn("Invalid authentication token for session {}: {}", managedAgent.getWsSessionId(), e.getMessage() == null ? e.toString() : e.getMessage());
+			logger.warn("Invalid authentication token for session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e));
 			managedAgent.sendSilentInvalidRequest("Invalid authentication token", (Long)request.getID());
 		} catch (NullPointerException e) {
-			logger.warn("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), e.getMessage() == null ? e.toString() : e.getMessage()); e.printStackTrace();
+			logger.warn("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e)); e.printStackTrace();
 			managedAgent.sendSilentInternalError(e.getMessage(), (Long)request.getID());
 		} catch (Exception e) {
-			logger.warn("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), e.getMessage() == null ? e.toString() : e.getMessage());
+			logger.warn("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e));
 			managedAgent.sendSilentInternalError(e.getMessage(), (Long)request.getID());
 		}
 	}
