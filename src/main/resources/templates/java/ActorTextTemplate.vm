@@ -361,9 +361,9 @@ public abstract class ${specname}Actor {
 
 			return;
 		} catch (JSONRPC2ParseException e) {
-			if (logger.isDebugEnabled()) logger.debug("Error processing request message {}: {}", json, ExceptionUtils.getMessage(e));
+			if (logger.isDebugEnabled()) logger.debug("Error processing message {}: {}", json, ExceptionUtils.getMessage(e));
 		} catch (Throwable e) {
-			logger.warn("Error processing request message {}: {}", json, ExceptionUtils.getMessage(e));
+			logger.warn("Error processing message {}: {}", json, ExceptionUtils.getMessage(e), e);
 		}
 	}
 

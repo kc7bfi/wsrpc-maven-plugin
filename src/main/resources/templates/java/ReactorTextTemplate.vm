@@ -138,9 +138,9 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 #end
 				return;
 			} catch (JSONRPC2ParseException ee) {
-				if (logger.isDebugEnabled()) logger.debug("Error processing request message {}: {}", json, ExceptionUtils.getMessage(ee));
+				if (logger.isDebugEnabled()) logger.debug("Error processing message {}: {}", json, ExceptionUtils.getMessage(ee));
 			} catch (Throwable ee) {
-				logger.warn("Error processing request message {}: {}", json, ExceptionUtils.getMessage(ee)); ee.printStackTrace();
+				logger.warn("Error processing message {}: {}", json, ExceptionUtils.getMessage(ee), ee);
 				if (request != null) managedAgent.sendSilentInternalError(ee.getMessage(), (Long)request.getID());
 			}
 		} catch (Throwable e) {
