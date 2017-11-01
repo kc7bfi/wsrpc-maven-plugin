@@ -272,7 +272,7 @@ public abstract class ${specname}Actor {
 	 */
 	@OnClose
 	public void onClose(CloseReason reason, Session wsSession) {
-		logger.info("Closing connection to server due to {}", reason.getReasonPhrase());
+		logger.info("Closing connection to server due to {} {}", reason.getCloseCode().toString(), reason.getReasonPhrase());
 		this.wsSession = null;
 		authenticated.setValue(false);
 		threadPool.shutdown();
