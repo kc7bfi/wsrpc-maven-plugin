@@ -132,6 +132,7 @@ public abstract class ${specname}Actor {
 					@Override
 					public boolean onDisconnect(CloseReason closeReason) {
 						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
+						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.GOING_AWAY)) return false;
 						authenticated.setValue(false);
 						counter++;
 						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
@@ -251,7 +252,7 @@ public abstract class ${specname}Actor {
 	 */
 	@OnClose
 	public void onClose(CloseReason reason, Session wsSession) {
-		logger.info("Closing connection to server due to {} {}", reason.getCloseCode().toString(), reason.getReasonPhrase());
+		logger.info("Closing connection to server due to {} {}", reason.getCloseCode(), reason.getReasonPhrase());
 		this.wsSession = null;
 		authenticated.setValue(false);
 		threadPool.shutdown();
