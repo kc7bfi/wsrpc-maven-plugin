@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,6 +62,7 @@ public abstract class ${specname}Actor {
 	protected final WsRpcResponseQueue responses = new WsRpcResponseQueue();
 	protected SslEngineConfigurator sslEngineConfigurator;
 	protected Session wsSession;
+	protected Future<Session> connectFuture;
 	protected final MutableBoolean authenticated = new MutableBoolean(false);
 	protected final BlockingQueue<ByteBuffer> binaryDataQueue = new LinkedBlockingQueue<>();
 	
@@ -115,7 +117,7 @@ public abstract class ${specname}Actor {
 		authenticated.setValue(false);
 		
 		try {
-			logger.info("Connecting at {}", wsrpcServerUri.toString());
+			logger.info("Connecting to {}", wsrpcServerUri);
 			client = ClientManager.createClient();
 			client.getProperties().put(ClientProperties.SHARED_CONTAINER, true);
 			client.getProperties().put(ClientProperties.SHARED_CONTAINER_IDLE_TIMEOUT, 5);
@@ -135,9 +137,8 @@ public abstract class ${specname}Actor {
 						authenticated.setValue(false);
 						counter++;
 						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
-							logger.info("Reconnecting {} attempt {} because disconnected: {} {}", wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+							logger.info("Reconnecting to {} attempt {} because disconnected: {} {}", wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 						}
-						try { Thread.sleep(1000); } catch (InterruptedException e) { return false; }
 						return true;
 					}
 
@@ -145,14 +146,18 @@ public abstract class ${specname}Actor {
 					public boolean onConnectFailure(Exception exception) {
 						counter++;
 						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
-							logger.info("Reconnecting {} attempt {} because connect failed: {}", wsrpcServerUri, counter, exception.getMessage());
+							logger.info("Reconnecting to {} attempt {} because connect failed: {}", wsrpcServerUri, counter, exception.getMessage());
 						}
-						try { Thread.sleep(1000); } catch (InterruptedException e) { return false; }
 						return true;
+					}
+					
+					@Override
+					public long getDelay() {
+						return 2;
 					}
 				});
 				
-			client.asyncConnectToServer(this, wsrpcServerUri);
+			connectFuture = client.asyncConnectToServer(this, wsrpcServerUri);
 
 			// wait for authentication
 			synchronized (authenticated) {
@@ -162,7 +167,7 @@ public abstract class ${specname}Actor {
 				return authenticated.booleanValue();
 			}
 		} catch (Throwable e) {
-			logger.warn("Error connecting to server {}: {}", wsrpcServerUri.toString(), ExceptionUtils.getMessage(e)); e.printStackTrace();
+			logger.warn("Error connecting to server {}: {}", wsrpcServerUri, ExceptionUtils.getMessage(e)); e.printStackTrace();
 			return false;
 		}
 	}
@@ -181,9 +186,10 @@ public abstract class ${specname}Actor {
 	public void close(CloseReason closeReason) {
 		// close the session
 		try {
+			if (connectFuture != null && !connectFuture.isDone() && !connectFuture.isCancelled()) connectFuture.cancel(true);
 			if (wsSession != null) wsSession.close(closeReason);
 		} catch (IOException e) {
-			logger.warn("Error closing connection: {}", ExceptionUtils.getMessage(e));
+			logger.warn("Error closing connection to {}: {}", wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
 		wsSession = null;
 		client = null;
@@ -224,7 +230,7 @@ public abstract class ${specname}Actor {
 	 */
 	@OnOpen
 	public void onOpen(Session wsSession) {
-		logger.info("Connected on session {}", wsSession.getId());
+		logger.info("Connected to {} on session {}", wsrpcServerUri, wsSession.getId());
 		this.wsSession = wsSession;
 #if ($maxBinaryMessageSize != "0")
 		this.wsSession.setMaxBinaryMessageBufferSize($maxBinaryMessageSize);
@@ -250,7 +256,7 @@ public abstract class ${specname}Actor {
 						}
 					},
 					authError -> {
-						logger.warn("Error authenticating with JWT {}: {}", userJwtToken, authError.getMessage() == null ? authError.toString() : authError.getMessage());
+						logger.warn("Error authenticating with JWT {}: {}", userJwtToken, ExceptionUtils.getMessage(authError));
 						synchronized (authenticated) {
 							authenticated.setValue(false);
 							authenticated.notify();
@@ -273,7 +279,7 @@ public abstract class ${specname}Actor {
 	 */
 	@OnClose
 	public void onClose(CloseReason reason, Session wsSession) {
-		logger.info("Closing connection to server due to {} {}", reason.getCloseCode(), reason.getReasonPhrase());
+		logger.info("Closing connection to {} due to {} {}", wsrpcServerUri, reason.getCloseCode(), reason.getReasonPhrase());
 		this.wsSession = null;
 		authenticated.setValue(false);
 		threadPool.shutdown();
@@ -286,7 +292,7 @@ public abstract class ${specname}Actor {
 	 */
 	@OnError
 	public void onError(Session wsSession, Throwable error) {
-		logger.warn("WebSocket error: {}", error.getMessage() == null ? error.toString() : error.getMessage());
+		logger.warn("WebSocket error at {}: {}", wsrpcServerUri, ExceptionUtils.getMessage(error));
 		error.printStackTrace();
 	}
 	
@@ -322,7 +328,7 @@ public abstract class ${specname}Actor {
 		try {
 			wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(requestId).toJSONString()));
 		} catch (Exception e) {
-			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
+			logger.warn("Error sending response to {}: {}", wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
 	}
 
@@ -335,7 +341,7 @@ public abstract class ${specname}Actor {
 		try {
 			wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(result, requestId).toJSONString()));
 		} catch (Exception e) {
-			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
+			logger.warn("Error sending response to {}: {}", wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
 	}
 
@@ -382,7 +388,7 @@ public abstract class ${specname}Actor {
 		} catch (JSONRPC2ParseException e) {
 			if (logger.isDebugEnabled()) logger.debug("Error processing response message {}: {}", json, ExceptionUtils.getMessage(e));
 		} catch (Throwable e) {
-			logger.warn("Error processing response message {}: {}", json, ExceptionUtils.getMessage(e));
+			logger.warn("Error processing response message {} from {}: {}", json, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
 
 		// process the message
@@ -401,7 +407,7 @@ public abstract class ${specname}Actor {
 		} catch (JSONRPC2ParseException e) {
 			if (logger.isDebugEnabled()) logger.debug("Error processing message {}: {}", json, ExceptionUtils.getMessage(e));
 		} catch (Throwable e) {
-			logger.warn("Error processing message {}: {}", json, ExceptionUtils.getMessage(e), e);
+			logger.warn("Error processing message {} from {}: {}", json, wsrpcServerUri, ExceptionUtils.getMessage(e), e);
 		}
 	}
 
