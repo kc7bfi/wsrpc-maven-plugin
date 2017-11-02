@@ -133,7 +133,6 @@ public abstract class ${specname}Actor {
 					@Override
 					public boolean onDisconnect(CloseReason closeReason) {
 						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
-						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.GOING_AWAY)) return false;
 						authenticated.setValue(false);
 						counter++;
 						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
@@ -146,7 +145,7 @@ public abstract class ${specname}Actor {
 					public boolean onConnectFailure(Exception exception) {
 						counter++;
 						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
-							logger.info("Reconnecting to {} attempt {} because connect failed: {}", wsrpcServerUri, counter, exception.getMessage());
+							logger.info("Reconnecting to {} attempt {} because connect failed: {}: {}", wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
 						}
 						return true;
 					}
@@ -274,15 +273,15 @@ public abstract class ${specname}Actor {
 
 	/**
 	 * The session has been closed
-	 * @param reason the reason it was closed
+	 * @param closeReason the reason it was closed
 	 * @param wsSession the session
 	 */
 	@OnClose
-	public void onClose(CloseReason reason, Session wsSession) {
-		logger.info("Closing connection to {} due to {} {}", wsrpcServerUri, reason.getCloseCode(), reason.getReasonPhrase());
+	public void onClose(CloseReason closeReason, Session wsSession) {
+		logger.info("Closing connection to {} due to {} {}", wsrpcServerUri, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+		if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) threadPool.shutdown();
 		this.wsSession = null;
 		authenticated.setValue(false);
-		threadPool.shutdown();
 	}
 
 	/**
