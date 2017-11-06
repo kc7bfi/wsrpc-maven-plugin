@@ -347,7 +347,7 @@ public abstract class ${specname}Agent {
 #end
 	 * @param timeout the call timeout in milliseconds
 	 */
-	public $request.returns sync${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
+	public $request.returns ${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		JSONRPC2Response response = async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end timeout)
 				.timeout(timeout, TimeUnit.MILLISECONDS)
 				.toBlocking()
