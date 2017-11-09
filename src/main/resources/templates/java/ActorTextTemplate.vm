@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.websocket.CloseReason;
@@ -48,8 +49,10 @@ import rx.Observable;
  */
 public abstract class ${specname}Actor {
 	private Logger logger = LoggerFactory.getLogger(getClass().getName());
+	private static AtomicInteger ActorCount = new AtomicInteger();
 	private static AtomicLong LastRequestId = new AtomicLong();
 
+	private int actorId = ActorCount.incrementAndGet();
 	private ClientManager client;
 	private final URI wsrpcServerUri;
 	private ClientManager.ReconnectHandler reconnectHandler;
@@ -117,7 +120,7 @@ public abstract class ${specname}Actor {
 		authenticated.setValue(false);
 		
 		try {
-			logger.info("Connecting to {}", wsrpcServerUri);
+			logger.info("Actor {} Connecting to {}", actorId, wsrpcServerUri);
 			client = ClientManager.createClient();
 			client.getProperties().put(ClientProperties.SHARED_CONTAINER, true);
 			client.getProperties().put(ClientProperties.SHARED_CONTAINER_IDLE_TIMEOUT, 5);
@@ -136,7 +139,7 @@ public abstract class ${specname}Actor {
 						authenticated.setValue(false);
 						counter++;
 						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
-							logger.info("Reconnecting to {} attempt {} because disconnected: {} {}", wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+							logger.info("Actor {} Reconnecting to {} attempt {} because disconnected: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 						}
 						return true;
 					}
@@ -145,7 +148,7 @@ public abstract class ${specname}Actor {
 					public boolean onConnectFailure(Exception exception) {
 						counter++;
 						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
-							logger.info("Reconnecting to {} attempt {} because connect failed: {}: {}", wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
+							logger.info("Actor {} Reconnecting to {} attempt {} because connect failed: {}: {}", actorId, wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
 						}
 						return true;
 					}
@@ -162,11 +165,11 @@ public abstract class ${specname}Actor {
 			synchronized (authenticated) {
 				if (authenticated.booleanValue()) return true;
 				authenticated.wait(connectTimeout);
-				if (!authenticated.booleanValue()) logger.warn("Timed out waiting for authentication");
+				if (!authenticated.booleanValue()) logger.warn("Actor {} Timed out waiting for authentication", actorId);
 				return authenticated.booleanValue();
 			}
 		} catch (Throwable e) {
-			logger.warn("Error connecting to server {}: {}", wsrpcServerUri, ExceptionUtils.getMessage(e)); e.printStackTrace();
+			logger.warn("Actor {} Error connecting to server {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e)); e.printStackTrace();
 			return false;
 		}
 	}
@@ -188,7 +191,7 @@ public abstract class ${specname}Actor {
 			if (connectFuture != null && !connectFuture.isDone() && !connectFuture.isCancelled()) connectFuture.cancel(true);
 			if (wsSession != null) wsSession.close(closeReason);
 		} catch (IOException e) {
-			logger.warn("Error closing connection to {}: {}", wsrpcServerUri, ExceptionUtils.getMessage(e));
+			logger.warn("Actor {} Error closing connection to {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
 		wsSession = null;
 		client = null;
@@ -207,7 +210,7 @@ public abstract class ${specname}Actor {
 	 */
 	@OnOpen
 	public void onOpen(Session wsSession) {
-		logger.info("Connected to {} on session {}", wsrpcServerUri, wsSession.getId());
+		logger.info("Actor {} Connected to {} on session {}", actorId, wsrpcServerUri, wsSession.getId());
 		this.wsSession = wsSession;
 #if ($maxTextMessageSize != "0")
 		this.wsSession.setMaxTextMessageBufferSize($maxTextMessageSize);
@@ -216,7 +219,7 @@ public abstract class ${specname}Actor {
 
 		try {
 			if (userJwtToken == null) {
-				logger.info("No JWT authentication code available");
+				logger.info("Actor {} No JWT authentication code available", actorId);
 				wsSession.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Not Authenticated"));
 				return;
 			}
@@ -226,14 +229,14 @@ public abstract class ${specname}Actor {
 			wsSession.getBasicRemote().sendText(request.toJSONString());
 			responses.onResponse(request.getID(), 10 * 1000).subscribe(
 					authResponse -> {
-						logger.info("Authentication result: {}", authResponse.getResult());
+						logger.info("Actor {} Authentication result: {}", actorId, authResponse.getResult());
 						synchronized (authenticated) {
 							authenticated.setValue((boolean)authResponse.getResult());
 							authenticated.notify();
 						}
 					},
 					authError -> {
-						logger.warn("Error authenticating with JWT {}: {}", userJwtToken, ExceptionUtils.getMessage(authError));
+						logger.warn("Actor {} Error authenticating with JWT {}: {}", actorId, userJwtToken, ExceptionUtils.getMessage(authError));
 						synchronized (authenticated) {
 							authenticated.setValue(false);
 							authenticated.notify();
@@ -242,7 +245,7 @@ public abstract class ${specname}Actor {
 					}
 					);
 		} catch (IOException e) {
-			logger.warn("Error sending authenticate request: {}", ExceptionUtils.getMessage(e));
+			logger.warn("Actor {} Error sending authenticate request: {}", actorId, ExceptionUtils.getMessage(e));
 			authenticated.setValue(false);
 			authenticated.notify();
 			close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error"));
@@ -256,7 +259,7 @@ public abstract class ${specname}Actor {
 	 */
 	@OnClose
 	public void onClose(CloseReason closeReason, Session wsSession) {
-		logger.info("Closing connection to {} due to {} {}", wsrpcServerUri, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+		logger.info("Actor {} Closing connection to {} due to {} {}", actorId, wsrpcServerUri, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 		if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) threadPool.shutdown();
 		this.wsSession = null;
 		authenticated.setValue(false);
@@ -269,7 +272,7 @@ public abstract class ${specname}Actor {
 	 */
 	@OnError
 	public void onError(Session wsSession, Throwable error) {
-		logger.warn("WebSocket error at {}: {}", wsrpcServerUri, ExceptionUtils.getMessage(error));
+		logger.warn("Actor {} WebSocket error at {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(error));
 		error.printStackTrace();
 	}
 	
@@ -305,7 +308,7 @@ public abstract class ${specname}Actor {
 		try {
 			wsSession.getBasicRemote().sendText(new JSONRPC2Response(requestId).toJSONString());
 		} catch (Exception e) {
-			logger.warn("Error sending response to {}: {}", wsrpcServerUri, ExceptionUtils.getMessage(e));
+			logger.warn("Actor {} Error sending response to {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
 	}
 
@@ -318,7 +321,7 @@ public abstract class ${specname}Actor {
 		try {
 			wsSession.getBasicRemote().sendText(new JSONRPC2Response(result, requestId).toJSONString());
 		} catch (Exception e) {
-			logger.warn("Error sending response to {}: {}", wsrpcServerUri, ExceptionUtils.getMessage(e));
+			logger.warn("Actor {} Error sending response to {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
 	}
 
@@ -347,7 +350,7 @@ public abstract class ${specname}Actor {
 	public void onMessage(String json, Session wsSession) {
 
 		// JSON message
-		logger.debug("OnMessage: {}", json);
+		logger.debug("Actor {} OnMessage: {}", actorId, json);
 
 		// process results
 		try {
@@ -355,9 +358,9 @@ public abstract class ${specname}Actor {
 			responses.addResponse((Long)response.getID(), response);
 			return;
 		} catch (JSONRPC2ParseException e) {
-			if (logger.isDebugEnabled()) logger.debug("Error processing response message {}: {}", json, ExceptionUtils.getMessage(e));
+			if (logger.isDebugEnabled()) logger.debug("Actor {} Error processing response message {}: {}", actorId, json, ExceptionUtils.getMessage(e));
 		} catch (Throwable e) {
-			logger.warn("Error processing response message {} from {}: {}", json, wsrpcServerUri, ExceptionUtils.getMessage(e));
+			logger.warn("Actor {} Error processing response message {} from {}: {}", actorId, json, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
 
 		// process the message
@@ -374,9 +377,9 @@ public abstract class ${specname}Actor {
 
 			return;
 		} catch (JSONRPC2ParseException e) {
-			if (logger.isDebugEnabled()) logger.debug("Error processing message {}: {}", json, ExceptionUtils.getMessage(e));
+			if (logger.isDebugEnabled()) logger.debug("Actor {} Error processing message {}: {}", actorId, json, ExceptionUtils.getMessage(e));
 		} catch (Throwable e) {
-			logger.warn("Error processing message {} from {}: {}", json, wsrpcServerUri, ExceptionUtils.getMessage(e), e);
+			logger.warn("Actor {} Error processing message {} from {}: {}", actorId, json, wsrpcServerUri, ExceptionUtils.getMessage(e), e);
 		}
 	}
 
@@ -392,7 +395,7 @@ public abstract class ${specname}Actor {
 	 */
 	public Observable<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end  int timeout) throws IOException {
 		if (!authenticated.booleanValue()) {
-			logger.debug("WebSocket not connected");
+			logger.debug("Actor {} WebSocket not connected", actorId);
 			return  Observable.from(new JSONRPC2Response[] {
 					new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Not connected"), 0),
 			});
