@@ -116,6 +116,16 @@ public abstract class ${specname}Actor {
 	 * @return true if connection and authentication were successful
 	 */
 	public synchronized boolean connect(int connectTimeout) {
+		return connect(null, connectTimeout);
+	}
+	
+	/**
+	 * Connect to the server
+	 * @param clientProperties extra client properties to set on connect
+	 * @param connectTimeout the timeout to wait for connection
+	 * @return true if connection and authentication were successful
+	 */
+	public synchronized boolean connect(Map<String, Object> clientProperties, int connectTimeout) {
 		if (client != null) return true;
 		authenticated.setValue(false);
 		
@@ -124,6 +134,7 @@ public abstract class ${specname}Actor {
 			client = ClientManager.createClient();
 			client.getProperties().put(ClientProperties.SHARED_CONTAINER, true);
 			client.getProperties().put(ClientProperties.SHARED_CONTAINER_IDLE_TIMEOUT, 5);
+			if (clientProperties != null) client.getProperties().putAll(clientProperties);
 			if (sslEngineConfigurator != null) client.getProperties().put(ClientProperties.SSL_ENGINE_CONFIGURATOR, sslEngineConfigurator);
 
 			if (this.reconnectHandler != null) 
