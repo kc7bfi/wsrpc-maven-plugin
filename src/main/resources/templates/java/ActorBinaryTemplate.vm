@@ -262,9 +262,9 @@ public abstract class ${specname}Actor {
 			wsSession.getBasicRemote().sendBinary(StringByteBuffer(request.toJSONString()));
 			responses.onResponse(request.getID(), 10 * 1000).subscribe(
 					authResponse -> {
-						logger.info("Actor {} Authentication result: {}", actorId, authResponse.getResult());
+						logger.info("Actor {} Authentication result: success {} result {}", actorId, authResponse.indicatesSuccess(), authResponse.getResult());
 						synchronized (authenticated) {
-							authenticated.setValue((boolean)authResponse.getResult());
+							authenticated.setValue(!authResponse.indicatesSuccess() ? false : (boolean)authResponse.getResult());
 							authenticated.notify();
 						}
 					},
