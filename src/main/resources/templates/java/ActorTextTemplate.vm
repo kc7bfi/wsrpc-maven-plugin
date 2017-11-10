@@ -109,7 +109,14 @@ public abstract class ${specname}Actor {
 	public URI getWsrpcServerUri() {
 		return wsrpcServerUri;
 	}
-	
+
+	/**
+	 * @return the actor id
+	 */
+	public int getActorId() {
+		return actorId;
+	}
+
 	/**
 	 * Connect to the server
 	 * @param connectTimeout the timeout to wait for connection
