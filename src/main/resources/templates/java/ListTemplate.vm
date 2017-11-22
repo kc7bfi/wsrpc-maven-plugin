@@ -60,11 +60,7 @@ public class $display.capitalize($listName) {
 		try {
   			$display.capitalize($listName) newObj = new $display.capitalize($listName)();
     		JSONArray items = (JSONArray) jsonObj.get("$item");
-   			if (items != null && items.size() > 0) {
-      			for (Object item : items) {
-      				newObj.get$display.capitalize($item)().add(${listOf}.parse((JSONObject)item));
-     			}
-     		}
+   			if (items != null && items.size() > 0) for (Object item : items) newObj.get$display.capitalize($item)().add(${listOf}.parse((JSONObject)item));
 			return newObj;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -84,8 +80,8 @@ public class $display.capitalize($listName) {
 			json.append("[" + item.toJSONString() + "]");
 			isFirst = false;
 		}
-		json.append("]");
-		return json.append("}").toString();
+		json.append("]}");
+		return json.toString();
 	}
 	
 	@Override

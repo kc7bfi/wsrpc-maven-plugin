@@ -2,8 +2,13 @@ package $packageName;
 
 import java.lang.StringBuilder;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
+import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 
@@ -17,7 +22,13 @@ import net.minidev.json.parser.JSONParser;
 public class $display.capitalize($className) {
 
 #foreach ($member in $members)
+#if ($member.type == "List<String>")
+	private $member.type $member.name = new LinkedList<>();
+#elseif ($member.type == "Set<String>")
+	private $member.type $member.name = new HashSet<>();
+#else
 	private $member.type $member.name;
+#end
 #end
 
 	/**
@@ -70,6 +81,16 @@ public class $display.capitalize($className) {
 #foreach ($member in $members)
 #if ($member.type == "int")
 			newObj.$member.name = ((Long)jsonObj.get("$member.name")).intValue();
+#elseif ($member.type == "List<String>")
+			{
+    			JSONArray items = (JSONArray) jsonObj.get("$member.name");
+   				if (items != null && items.size() > 0) for (Object item : items) newObj.get$display.capitalize($member.name)().add((String)item);
+   			}
+#elseif ($member.type == "Set<String>")
+			{
+		   		JSONArray items = (JSONArray) jsonObj.get("$member.name");
+   				if (items != null && items.size() > 0) for (Object item : items) newObj.get$display.capitalize($member.name)().add((String)item);
+   			}
 #else
 			newObj.$member.name = ($member.type)jsonObj.get("$member.name");
 #end
@@ -89,6 +110,28 @@ public class $display.capitalize($className) {
 #foreach ($member in $members)
 #if ($member.type == "String")
 		json.append("'$member.name': '" + $member.name + "',");
+#elseif ($member.type == "List<String>")
+		{
+			json.append("'$member.name': [");
+			boolean isFirst = true;
+			for (String item : $member.name) {
+				if (!isFirst) json.append(",");
+				json.append("[" + item + "]");
+				isFirst = false;
+			}
+		}
+		json.append("]}");
+#elseif ($member.type == "Set<String>")
+		{ 
+			json.append("'$member.name': [");
+			boolean isFirst = true;
+			for (String item : $member.name) {
+				if (!isFirst) json.append(",");
+				json.append("[" + item + "]");
+				isFirst = false;
+			}
+		}
+		json.append("]}");
 #else
 		json.append("'$member.name': " + $member.name + ",");
 #end
