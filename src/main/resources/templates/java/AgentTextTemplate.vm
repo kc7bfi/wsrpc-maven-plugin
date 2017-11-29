@@ -11,7 +11,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import net.minidev.json.JSONObject;
 import net.psgglobal.wsrpc.core.WsRpcResponseQueue;
 import net.psgglobal.wsrpc.core.WsRpcException;
@@ -34,7 +34,7 @@ public abstract class ${specname}Agent {
 	private Logger logger = LoggerFactory.getLogger(getClass().getName());
 	
 	protected Session wsSession;
-	protected JWT jwtAuthentication;
+	protected DecodedJWT jwtAuthentication;
 	protected WsRpcResponseQueue responses = new WsRpcResponseQueue();
 	protected AtomicLong lastRequestId = new AtomicLong();
 	
@@ -55,7 +55,7 @@ public abstract class ${specname}Agent {
 	/**
 	 * @param jwtAuthentication the jwtAuthentication to set
 	 */
-	public void setJwtAuthentication(JWT jwtAuthentication) {
+	public void setJwtAuthentication(DecodedJWT jwtAuthentication) {
 		this.jwtAuthentication = jwtAuthentication;
 	}
 
