@@ -773,7 +773,9 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 				request.put("returns", requestSpec.get("returns"));
 				request.put("returnsJavadoc", requestSpec.get("returnsJavadoc"));
 				request.put("parameters", getParametersMap((List<Map<String, Object>>) requestSpec.get("parameters")));
-				String defTimeout = specification.get("defaultTimeout") == null ? "200" : (String) specification.get("defaultTimeout");
+				String defTimeout = (String) requestSpec.get("defaultTimeout");
+				if (defTimeout == null) defTimeout = (String) specification.get("defaultTimeout");
+				if (defTimeout == null) defTimeout = "200";
 				request.put("defTimeout", defTimeout);
 				if ("true".equals(requestSpec.get("abstractOnCall"))) request.put("abstractOnCall", "true");
 				if ("client".equals(requestSpec.get("sender")) || "both".equals(requestSpec.get("sender"))) {
@@ -800,7 +802,9 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 				request.put("returns", requestSpec.get("returns"));
 				request.put("returnsJavadoc", requestSpec.get("returnsJavadoc"));
 				request.put("parameters", getParametersMap((List<Map<String, Object>>) requestSpec.get("parameters")));
-				String defTimeout = specification.get("defaultTimeout") == null ? "200" : (String) specification.get("defaultTimeout");
+				String defTimeout = (String) requestSpec.get("defaultTimeout");
+				if (defTimeout == null) defTimeout = (String) specification.get("defaultTimeout");
+				if (defTimeout == null) defTimeout = "200";
 				request.put("defTimeout", defTimeout);
 				if ("true".equals(requestSpec.get("abstractOnCall"))) request.put("abstractOnCall", "true");
 				if ("server".equals(requestSpec.get("sender")) || "both".equals(requestSpec.get("sender"))) {
