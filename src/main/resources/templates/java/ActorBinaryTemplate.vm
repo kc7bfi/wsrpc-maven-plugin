@@ -36,9 +36,9 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2ParseException;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
+import io.reactivex.Single;
 import net.minidev.json.JSONObject;
 import net.psgglobal.wsrpc.core.WsRpcResponseQueue;
-import rx.Observable;
 
 /**
  * Generated with Velocity - DO NOT EDIT
@@ -457,12 +457,10 @@ public abstract class ${specname}Actor {
 #end
 	 * @param timeout the call timeout in milliseconds
 	 */
-	public Observable<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end  int timeout) throws IOException {
+	public Single<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end  int timeout) throws IOException {
 		if (!authenticated.booleanValue()) {
 			logger.debug("Actor {} WebSocket not connected", actorId);
-			return  Observable.from(new JSONRPC2Response[] {
-					new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Not connected"), 0),
-			});
+			return  Single.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Not connected"), 0));
 		}
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end LastRequestId.incrementAndGet());
 		wsSession.getBasicRemote().sendBinary(StringByteBuffer(request.toJSONString()));
@@ -484,8 +482,7 @@ public abstract class ${specname}Actor {
 	public $request.returns ${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		JSONRPC2Response response = async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end timeout)
 				.timeout(timeout, TimeUnit.MILLISECONDS)
-				.toBlocking()
-				.first();
+				.blockingGet();
 		if (response == null) throw new IOException("TimeOut");
 		if (response.getError() != null) throw new IOException(response.getError().getMessage());
 #if ($request.returns == "void")
@@ -530,7 +527,7 @@ public abstract class ${specname}Actor {
 #end
 #end
 	 */
-	public Observable<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name#if($foreach.hasNext),#end#end) throws IOException {
+	public Single<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name#if($foreach.hasNext),#end#end) throws IOException {
 		return async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end $request.defTimeout);
 	}
 	

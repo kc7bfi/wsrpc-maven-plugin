@@ -21,7 +21,7 @@ import net.psgglobal.wsrpc.core.WsRpcInvalidParamsException;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
-import rx.Observable;
+import io.reactivex.Single;
 
 /**
  * Generated with Velocity - DO NOT EDIT
@@ -329,7 +329,7 @@ public abstract class ${specname}Agent {
 #end
 	 * @param timeout the call timeout in milliseconds
 	 */
-	public Observable<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
+	public Single<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end lastRequestId.incrementAndGet());
 		wsSession.getBasicRemote().sendBinary(StringByteBuffer(request.toJSONString()));
 		return responses.onResponse(request.getRequestId(), timeout);
@@ -350,8 +350,7 @@ public abstract class ${specname}Agent {
 	public $request.returns ${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		JSONRPC2Response response = async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end timeout)
 				.timeout(timeout, TimeUnit.MILLISECONDS)
-				.toBlocking()
-				.first();
+				.blockingGet();
 		if (response == null) throw new IOException("TimeOut");
 		if (response.getError() != null) throw new IOException(response.getError().getMessage());
 #if ($request.returns != "void")
@@ -371,7 +370,7 @@ public abstract class ${specname}Agent {
 #end
 #end
 	 */
-	public Observable<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name#if($foreach.hasNext), #end#end) throws IOException {
+	public Single<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name#if($foreach.hasNext), #end#end) throws IOException {
 		return async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name#if($foreach.hasNext), #end#end);
 	}
 	
