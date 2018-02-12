@@ -36,6 +36,7 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2ParseException;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.Single;
 import net.minidev.json.JSONObject;
 import net.psgglobal.wsrpc.core.WsRpcResponseQueue;
@@ -61,6 +62,7 @@ public abstract class ${specname}Actor {
 #else
 	private ExecutorService threadPool = Executors.newCachedThreadPool(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
 #end
+	private static CompositeDisposable compositeDisposable;
 
 	protected final WsRpcResponseQueue responses = new WsRpcResponseQueue();
 	protected SslEngineConfigurator sslEngineConfigurator;
@@ -221,6 +223,7 @@ public abstract class ${specname}Actor {
 	public void close(CloseReason closeReason) {
 		// close the session
 		try {
+			compositeDisposable.dispose();
 			if (connectFuture != null && !connectFuture.isDone() && !connectFuture.isCancelled()) connectFuture.cancel(true);
 			if (wsSession != null) wsSession.close(closeReason);
 		} catch (IOException e) {
@@ -429,7 +432,7 @@ public abstract class ${specname}Actor {
 	public Single<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end  int timeout) throws IOException {
 		if (!authenticated.booleanValue()) {
 			logger.debug("Actor {} WebSocket not connected", actorId);
-			return  Single.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Not connected"), 0));
+			return  Single.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Not connected"), 0)).doOnSubscribe((d) -> compositeDisposable.add(d));
 		}
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end LastRequestId.incrementAndGet());
 		wsSession.getBasicRemote().sendText(request.toJSONString());
