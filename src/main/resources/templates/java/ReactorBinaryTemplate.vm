@@ -177,10 +177,10 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 			managedAgent.sendResponse(true, (Long)request.getID());
 			logger.debug("WsSession {} authenticated", managedAgent.getWsSessionId());
 		} catch (JWTVerificationException e) {
-			logger.warn("Invalid authentication token for session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e));
+			logger.debug("Invalid authentication token for session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e));
 			managedAgent.sendSilentInvalidRequest("Invalid authentication token", (Long)request.getID());
 		} catch (NullPointerException e) {
-			logger.warn("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e)); e.printStackTrace();
+			logger.debug("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e)); e.printStackTrace();
 			managedAgent.sendSilentInternalError(e.getMessage(), (Long)request.getID());
 		} catch (Exception e) {
 			logger.warn("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e));
