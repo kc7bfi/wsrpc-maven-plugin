@@ -62,7 +62,7 @@ public abstract class ${specname}Actor {
 #else
 	private ExecutorService threadPool = Executors.newCachedThreadPool(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
 #end
-	private static CompositeDisposable compositeDisposable;
+	private final CompositeDisposable compositeDisposable = new CompositeDisposable();
 
 	protected final WsRpcResponseQueue responses = new WsRpcResponseQueue();
 	protected SslEngineConfigurator sslEngineConfigurator;
