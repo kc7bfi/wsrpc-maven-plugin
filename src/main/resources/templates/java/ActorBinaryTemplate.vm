@@ -485,6 +485,7 @@ public abstract class ${specname}Actor {
 	public $request.returns ${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		JSONRPC2Response response = async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end timeout)
 				.timeout(timeout, TimeUnit.MILLISECONDS)
+				.onErrorReturn((e) -> { logger.warn("${display.uncapitalize($request.name)}: {}", ExceptionUtils.getMessage(e)); return null; })
 				.blockingGet();
 		if (response == null) throw new IOException("TimeOut");
 		if (response.getError() != null) throw new IOException(response.getError().getMessage());
