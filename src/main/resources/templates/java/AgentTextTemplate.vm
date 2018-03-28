@@ -258,13 +258,13 @@ public abstract class ${specname}Agent {
 			sendSilentResponse(value, request.getRequestId());
 #end
 		} catch (WsRpcInternalErrorException e) {
-			sendSilentInternalError(e.getMessage(), request.getRequestId());
+			sendSilentInternalError(ExceptionUtils.getMessage(e), request.getRequestId());
 		} catch (WsRpcInvalidRequestException e) {
-			sendSilentInvalidRequest(e.getMessage(), request.getRequestId());
+			sendSilentInvalidRequest(ExceptionUtils.getMessage(e), request.getRequestId());
 		} catch (WsRpcInvalidParamsException e) {
-			sendSilentInvalidParams(e.getMessage(), request.getRequestId());
+			sendSilentInvalidParams(ExceptionUtils.getMessage(e), request.getRequestId());
 		} catch (Exception e) {
-			sendSilentInternalError(e.getMessage(), request.getRequestId());
+			sendSilentInternalError(ExceptionUtils.getMessage(e), request.getRequestId());
 		}
 	}
 	
