@@ -1,5 +1,6 @@
 package $packageName;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,6 +56,12 @@ public class $display.capitalize($noticeName)Notice {
 		$parameter.type $parameter.name = ${parameter.type}.parse((JSONObject)request.getNamedParams().get("$parameter.name"));
 #elseif ($parameter.type == "int")
 		$parameter.type $parameter.name = ((Long)notice.getNamedParams().get("$parameter.name")).intValue();
+#elseif ($parameter.type == "double")
+		$parameter.type $parameter.name = 0.0;
+		if (notice.getNamedParams().get("$parameter.name") instanceof BigDecimal)
+			$parameter.name = ((BigDecimal)notice.getNamedParams().get("$parameter.name")).doubleValue();
+		else
+			$parameter.name = ((Double)notice.getNamedParams().get("$parameter.name")).doubleValue();
 #else
 		$parameter.type $parameter.name = ($parameter.type)notice.getNamedParams().get("$parameter.name");
 #end
