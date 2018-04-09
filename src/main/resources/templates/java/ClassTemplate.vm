@@ -80,7 +80,9 @@ public class $display.capitalize($className) {
 		try {
 			$display.capitalize($className) newObj = new $display.capitalize($className)();
 #foreach ($member in $members)
-#if ($member.type == "int")
+#if ($member.type == "Long")
+			newObj.$member.name = ((Long)jsonObj.get("$member.name"));
+#elseif ($member.type == "int")
 			newObj.$member.name = ((Long)jsonObj.get("$member.name")).intValue();
 #elseif ($member.type == "double")
 			if (jsonObj.get("$member.name") instanceof BigDecimal)
@@ -114,7 +116,9 @@ public class $display.capitalize($className) {
 	public String toJSONString() {
 		StringBuilder json = new StringBuilder("{");
 #foreach ($member in $members)
-#if ($member.type == "String")
+#if ($member.type == "Long")
+		if ($member.name != null) json.append("'$member.name': '" + $member.name + "',");
+#elseif ($member.type == "String")
 		json.append("'$member.name': '" + $member.name + "',");
 #elseif ($member.type == "List<String>")
 		{
