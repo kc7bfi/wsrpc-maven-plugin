@@ -6,6 +6,8 @@ import java.util.Map;
 
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
 
+import net.minidev.json.JSONObject;
+
 /**
  * Generated with Velocity - DO NOT EDIT
 #if ($noticeJavadoc)
@@ -37,9 +39,9 @@ public class $display.capitalize($noticeName)Notice {
 	}
 
 	/**
-	 * Test if we can narrow a JSON message to this request
-	 * @param request the JSON request
-	 * @return true if we can narrow this request
+	 * Test if we can narrow a JSON message to this notice
+	 * @param notice the JSON notice
+	 * @return true if we can narrow this notice
 	 */
 	public static boolean canNarrow(JSONRPC2Request notice) {
 		return "$display.capitalize($noticeName)".equals(notice.getMethod());
@@ -53,7 +55,7 @@ public class $display.capitalize($noticeName)Notice {
 	public static $display.capitalize($noticeName)Notice narrow(JSONRPC2Request notice) {
 #foreach ($parameter in $parameters)
 #if ($parameter.type.indexOf(".") > 0)
-		$parameter.type $parameter.name = ${parameter.type}.parse((JSONObject)request.getNamedParams().get("$parameter.name"));
+		$parameter.type $parameter.name = ${parameter.type}.parse((JSONObject)notice.getNamedParams().get("$parameter.name"));
 #elseif ($parameter.type == "int")
 		$parameter.type $parameter.name = ((Long)notice.getNamedParams().get("$parameter.name")).intValue();
 #elseif ($parameter.type == "double")
