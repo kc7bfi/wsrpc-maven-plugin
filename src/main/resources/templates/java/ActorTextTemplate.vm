@@ -514,5 +514,12 @@ public abstract class ${specname}Actor {
 	protected static long nextRequestId() {
 		return LastRequestId.incrementAndGet();
 	}
+	
+	/**
+	 * @return the CompositeDisposable
+	 */
+	public CompositeDisposable getCompositeDisposable() {
+		return compositeDisposable;
+	}
 
 }
