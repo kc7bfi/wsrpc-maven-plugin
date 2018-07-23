@@ -550,7 +550,7 @@ public abstract class ${specname}Actor {
 	/**
 	 * add a disposable to the composit disposable object.
 	 * These will be disposed when the client is closed.
-	 * @param the CompositeDisposable
+	 * @param disposable the CompositeDisposable
 	 */
 	public void addDisposable(Disposable disposable) {
 		compositeDisposable.add(disposable);
