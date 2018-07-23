@@ -110,8 +110,8 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 
 	/**
 	 * Process an inbound message
-	 * @param json the JSON message
 	 * @param wsSession the WebSocket session
+	 * @param message the JSON message
 	 */
 	@OnMessage
 	public void onMessage(Session wsSession, ByteBuffer message) {
