@@ -264,7 +264,7 @@ public abstract class ${specname}Actor {
 			params.put("token", userJwtToken);
 			JSONRPC2Request request = new JSONRPC2Request("Authenticate", params, LastRequestId.incrementAndGet());
 			wsSession.getBasicRemote().sendText(request.toJSONString());
-			responses.onResponse(request.getID(), 10 * 1000).subscribe(
+			addDisposable(responses.onResponse(request.getID(), 10 * 1000).subscribe(
 					authResponse -> {
 						logger.info("Actor {} Authentication result: success {} result {}", actorId, authResponse.indicatesSuccess(), authResponse.getResult());
 						synchronized (authenticated) {
@@ -280,7 +280,7 @@ public abstract class ${specname}Actor {
 							close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error"));
 						}
 					}
-					);
+					));
 		} catch (IOException e) {
 			logger.warn("Actor {} Error sending authenticate request: {}", actorId, ExceptionUtils.getMessage(e));
 			authenticated.setValue(false);
