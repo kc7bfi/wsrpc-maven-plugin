@@ -21,6 +21,8 @@ import net.psgglobal.wsrpc.core.WsRpcInvalidParamsException;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
+import io.reactivex.disposables.Disposable;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.Single;
 
 /**
@@ -37,7 +39,8 @@ public abstract class ${specname}Agent {
 	protected DecodedJWT jwtAuthentication;
 	protected WsRpcResponseQueue responses = new WsRpcResponseQueue();
 	protected AtomicLong lastRequestId = new AtomicLong();
-	
+	private final CompositeDisposable compositeDisposable = new CompositeDisposable();
+
 	/**
 	 * @return the next request id
 	 */
@@ -181,6 +184,13 @@ public abstract class ${specname}Agent {
 	 */
 	public String getWsSessionId() {
 		return wsSession.getId();
+	}
+
+	/**
+	 * Close the connection
+	 */
+	public void close() {
+		compositeDisposable.dispose();
 	}
 
 #foreach ($notice in $serverNotices)
@@ -336,5 +346,14 @@ public abstract class ${specname}Agent {
 	 */
 	protected long nextRequestId() {
 		return lastRequestId.incrementAndGet();
+	}
+	
+	/**
+	 * add a disposable to the composit disposable object.
+	 * These will be disposed when the client is closed.
+	 * @param disposable the CompositeDisposable
+	 */
+	public void addDisposable(Disposable disposable) {
+		compositeDisposable.add(disposable);
 	}
 }

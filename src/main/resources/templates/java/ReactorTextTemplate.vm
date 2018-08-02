@@ -79,7 +79,10 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 	public void onClose(Session wsSession) {
 		logger.debug("WsSession {} closed", wsSession.getId());
 		T managedAgent = managedAgents.remove(wsSession.getId());
-		if (managedAgent != null) managedAgent.onAgentRemoved(managedAgent);
+		if (managedAgent != null) {
+			managedAgent.onAgentRemoved(managedAgent);
+			managedAgent.close();
+		}
 		threadPool.shutdown();
 	}
 
