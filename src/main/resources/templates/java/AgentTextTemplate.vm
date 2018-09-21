@@ -10,6 +10,7 @@ import javax.websocket.Session;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import net.minidev.json.JSONObject;
@@ -260,6 +261,7 @@ public abstract class ${specname}Agent {
 	 */
 	public final void on${display.capitalize($request.name)}(${display.capitalize($request.name)}Request request) {
 		try {
+			if (jwtAuthentication != null) MDC.put("username", jwtAuthentication.getSubject());
 #if ($request.returns == "void")
 			${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)request.#if ($parameter.type == "boolean")is#{else}get#{end}${display.capitalize($parameter.name)}()#if($foreach.hasNext), #end#end);
 			sendSilentResponse(request.getRequestId());
