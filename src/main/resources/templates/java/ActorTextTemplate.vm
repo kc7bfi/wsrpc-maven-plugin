@@ -243,7 +243,7 @@ public abstract class ${specname}Actor {
 	 */
 	@OnOpen
 	public void onOpen(Session wsSession) {
-		logger.info("Actor {} Connected to {} on session {}", actorId, wsrpcServerUri, wsSession.getId());
+		if (logger.isDebugEnabled()) logger.debug("Actor {} Connected to {} on session {}", actorId, wsrpcServerUri, wsSession.getId());
 		this.wsSession = wsSession;
 #if ($maxTextMessageSize != "0")
 		this.wsSession.setMaxTextMessageBufferSize($maxTextMessageSize);
