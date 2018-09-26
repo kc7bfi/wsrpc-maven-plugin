@@ -155,7 +155,7 @@ public abstract class ${specname}Actor {
 		authenticated.setValue(false);
 		
 		try {
-			logger.info("Actor {} Connecting to {}", actorId, wsrpcServerUri);
+			if (logger.isDebugEnabled()) logger.debug("Actor {} Connecting to {}", actorId, wsrpcServerUri);
 			client = ClientManager.createClient();
 			client.getProperties().put(ClientProperties.SHARED_CONTAINER, true);
 			client.getProperties().put(ClientProperties.SHARED_CONTAINER_IDLE_TIMEOUT, 5);
@@ -174,18 +174,14 @@ public abstract class ${specname}Actor {
 						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
 						authenticated.setValue(false);
 						counter++;
-						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
-							logger.info("Actor {} Reconnecting to {} attempt {} because disconnected: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
-						}
+						if (logger.isDebugEnabled()) logger.debug("Actor {} Reconnecting to {} attempt {} because disconnected: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 						return true;
 					}
 
 					@Override
 					public boolean onConnectFailure(Exception exception) {
 						counter++;
-						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
-							logger.info("Actor {} Reconnecting to {} attempt {} because connect failed: {}: {}", actorId, wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
-						}
+						if (logger.isDebugEnabled()) logger.debug("Actor {} Reconnecting to {} attempt {} because connect failed: {}: {}", actorId, wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
 						return true;
 					}
 					
