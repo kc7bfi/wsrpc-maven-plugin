@@ -520,4 +520,20 @@ public abstract class ${specname}Actor {
 		compositeDisposable.add(disposable);
 	}
 
+	/**
+	 * Check if actor is connected
+	 * @return true if connected
+	 */
+	public boolean isConnected() {
+		return wsSession != null && wsSession.isOpen();
+	}
+
+	/**
+	 * Test if actor is authenticated
+	 * @return true if authenticated
+	 */
+	public boolean isAuthenticated() {
+		return authenticated.booleanValue();
+	}
+
 }
