@@ -105,7 +105,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 	 * @param buffer the ByteBuffer to convert
 	 * @return the string
 	 */
-	private String ByteBufferString(ByteBuffer buffer) {
+	private String byteBufferString(ByteBuffer buffer) {
 		byte[] str = new byte[buffer.remaining()];
 		buffer.get(str);
 		return new String(str);
@@ -118,7 +118,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 	 */
 	@OnMessage
 	public void onMessage(Session wsSession, ByteBuffer message) {
-		String json = ByteBufferString(message);
+		String json = byteBufferString(message);
 		logger.debug("OnMessage: {}", json);
 		T managedAgent = managedAgents.get(wsSession.getId());
 		if (managedAgent == null) {

@@ -92,7 +92,7 @@ public abstract class ${specname}Agent {
 	 * @param str the string to convert
 	 * @return the new ByteBuffer
 	 */
-	private ByteBuffer StringByteBuffer(String str) {
+	private ByteBuffer stringByteBuffer(String str) {
 		ByteBuffer buffer = ByteBuffer.allocate(str.length()).put(str.getBytes());
 		buffer.flip();
 		return buffer;
@@ -126,7 +126,7 @@ public abstract class ${specname}Agent {
 	 * @param requestId the request id
 	 */
 	public void sendInternalError(String error, long requestId) throws IOException {
-		wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(error), requestId).toJSONString()));
+		wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(error), requestId).toJSONString()));
 	}
 
 	/**
@@ -135,7 +135,7 @@ public abstract class ${specname}Agent {
 	 * @param requestId the request id
 	 */
 	public void sendInvalidParams(String error, long requestId) throws IOException {
-		wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INVALID_PARAMS.appendMessage(error), requestId).toJSONString()));
+		wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INVALID_PARAMS.appendMessage(error), requestId).toJSONString()));
 	}
 
 	/**
@@ -144,7 +144,7 @@ public abstract class ${specname}Agent {
 	 * @param requestId the request id
 	 */
 	public void sendInvalidRequest(String error, long requestId) throws IOException {
-		wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INVALID_REQUEST.appendMessage(error), requestId).toJSONString()));
+		wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INVALID_REQUEST.appendMessage(error), requestId).toJSONString()));
 	}
 
 	/**
@@ -152,7 +152,7 @@ public abstract class ${specname}Agent {
 	 * @param requestId the original request id
 	 */
 	public void sendResponse(long requestId) throws IOException {
-		wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(requestId).toJSONString()));
+		wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(requestId).toJSONString()));
 	}
 
 	/**
@@ -161,7 +161,7 @@ public abstract class ${specname}Agent {
 	 * @param requestId the original request id
 	 */
 	public void sendResponse(Object result, long requestId) throws IOException {
-		wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(result, requestId).toJSONString()));
+		wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(result, requestId).toJSONString()));
 	}
 
 	/**
@@ -171,7 +171,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentInternalError(String error, long requestId) {
 		try {
-			wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(error), requestId).toJSONString()));
+			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(error), requestId).toJSONString()));
 		} catch (Exception e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
@@ -184,7 +184,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentInvalidParams(String error, long requestId) {
 		try {
-			wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INVALID_PARAMS.appendMessage(error), requestId).toJSONString()));
+			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INVALID_PARAMS.appendMessage(error), requestId).toJSONString()));
 		} catch (Exception e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
@@ -197,7 +197,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentInvalidRequest(String error, long requestId) {
 		try {
-			wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INVALID_REQUEST.appendMessage(error), requestId).toJSONString()));
+			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INVALID_REQUEST.appendMessage(error), requestId).toJSONString()));
 		} catch (Exception e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
@@ -209,7 +209,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentResponse(long requestId) {
 		try {
-			wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(requestId).toJSONString()));
+			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(requestId).toJSONString()));
 		} catch (Exception e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
@@ -222,7 +222,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentResponse(Object result, long requestId) {
 		try {
-			wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(result, requestId).toJSONString()));
+			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(result, requestId).toJSONString()));
 		} catch (Exception e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
@@ -253,7 +253,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void send${display.capitalize($notice.name)}(#foreach ($parameter in $notice.parameters)$parameter.type $parameter.name#if($foreach.hasNext), #end#end) throws IOException {
 		${display.capitalize($notice.name)}Notice notice = new ${display.capitalize($notice.name)}Notice(#foreach ($parameter in $notice.parameters)$parameter.name, #end lastRequestId.incrementAndGet());
-		wsSession.getBasicRemote().sendBinary(StringByteBuffer(notice.toJSONString()));
+		wsSession.getBasicRemote().sendBinary(stringByteBuffer(notice.toJSONString()));
 	}
 	
 #end
@@ -343,7 +343,7 @@ public abstract class ${specname}Agent {
 	 */
 	public Single<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end lastRequestId.incrementAndGet());
-		wsSession.getBasicRemote().sendBinary(StringByteBuffer(request.toJSONString()));
+		wsSession.getBasicRemote().sendBinary(stringByteBuffer(request.toJSONString()));
 		return responses.onResponse(request.getRequestId(), timeout);
 	}
 	

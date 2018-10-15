@@ -174,7 +174,7 @@ public abstract class ${specname}Actor {
 						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
 						authenticated.setValue(false);
 						counter++;
-						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
+						if ((counter < 10) || (counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
 							logger.warn("Actor {} Reconnecting to {} attempt {} because disconnected: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 						}
 						return true;
@@ -183,7 +183,7 @@ public abstract class ${specname}Actor {
 					@Override
 					public boolean onConnectFailure(Exception exception) {
 						counter++;
-						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
+						if ((counter < 10) || (counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
 							logger.warn("Actor {} Reconnecting to {} attempt {} because connect failed: {}: {}", actorId, wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
 						}
 						return true;

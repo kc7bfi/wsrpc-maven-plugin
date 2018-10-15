@@ -174,7 +174,7 @@ public abstract class ${specname}Actor {
 						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
 						authenticated.setValue(false);
 						counter++;
-						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
+						if ((counter < 10) || (counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
 							logger.warn("Actor {} Reconnecting to {} attempt {} because disconnected: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 						}
 						return true;
@@ -183,7 +183,7 @@ public abstract class ${specname}Actor {
 					@Override
 					public boolean onConnectFailure(Exception exception) {
 						counter++;
-						if ((counter < 10) || (counter >= 10 && counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
+						if ((counter < 10) || (counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
 							logger.warn("Actor {} Reconnecting to {} attempt {} because connect failed: {}: {}", actorId, wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
 						}
 						return true;
@@ -246,7 +246,7 @@ public abstract class ${specname}Actor {
 	 * @param str the string to convert
 	 * @return the new ByteBuffer
 	 */
-	private ByteBuffer StringByteBuffer(String str) {
+	private ByteBuffer stringByteBuffer(String str) {
 		ByteBuffer buffer = ByteBuffer.allocate(str.length()).put(str.getBytes());
 		buffer.flip();
 		return buffer;
@@ -257,7 +257,7 @@ public abstract class ${specname}Actor {
 	 * @param buffer the ByteBuffer to convert
 	 * @return the string
 	 */
-	private String ByteBufferString(ByteBuffer buffer) {
+	private String byteBufferString(ByteBuffer buffer) {
 		byte[] str = new byte[buffer.remaining()];
 		buffer.get(str);
 		return new String(str);
@@ -285,7 +285,7 @@ public abstract class ${specname}Actor {
 			Map<String, Object> params = new HashMap<>();
 			params.put("token", userJwtToken);
 			JSONRPC2Request request = new JSONRPC2Request("Authenticate", params, LastRequestId.incrementAndGet());
-			wsSession.getBasicRemote().sendBinary(StringByteBuffer(request.toJSONString()));
+			wsSession.getBasicRemote().sendBinary(stringByteBuffer(request.toJSONString()));
 			addDisposable(responses.onResponse(request.getID(), 10 * 1000).subscribe(
 					authResponse -> {
 						synchronized (authenticated) {
@@ -347,7 +347,7 @@ public abstract class ${specname}Actor {
 	 * @param error the error
 	 */
 	public void sendResponse(JSONRPC2Error error, Long requestId) throws IOException {
-		wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(error, requestId).toJSONString()));
+		wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(error, requestId).toJSONString()));
 	}
 
 	/**
@@ -355,7 +355,7 @@ public abstract class ${specname}Actor {
 	 * @param response the response
 	 */
 	public void sendResponse(JSONRPC2Response response) throws IOException {
-		wsSession.getBasicRemote().sendBinary(StringByteBuffer(response.toJSONString()));
+		wsSession.getBasicRemote().sendBinary(stringByteBuffer(response.toJSONString()));
 	}
 
 	/**
@@ -364,7 +364,7 @@ public abstract class ${specname}Actor {
 	 */
 	public void sendSilentResponse(long requestId) {
 		try {
-			wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(requestId).toJSONString()));
+			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(requestId).toJSONString()));
 		} catch (Exception e) {
 			logger.warn("Actor {} Error sending response to {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
@@ -377,7 +377,7 @@ public abstract class ${specname}Actor {
 	 */
 	public void sendSilentResponse(Object result, long requestId) {
 		try {
-			wsSession.getBasicRemote().sendBinary(StringByteBuffer(new JSONRPC2Response(result, requestId).toJSONString()));
+			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(result, requestId).toJSONString()));
 		} catch (Exception e) {
 			logger.warn("Actor {} Error sending response to {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
@@ -416,7 +416,7 @@ public abstract class ${specname}Actor {
 		}
 
 		// JSON message
-		String json = ByteBufferString(message);
+		String json = byteBufferString(message);
 		logger.debug("Actor {} OnMessage JSON: {}", actorId, json);
 
 		// process results
@@ -466,7 +466,7 @@ public abstract class ${specname}Actor {
 			return  Single.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Not connected"), 0));
 		}
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end LastRequestId.incrementAndGet());
-		wsSession.getBasicRemote().sendBinary(StringByteBuffer(request.toJSONString()));
+		wsSession.getBasicRemote().sendBinary(stringByteBuffer(request.toJSONString()));
 		return responses.onResponse(request.getRequestId(), timeout);
 	}
 
