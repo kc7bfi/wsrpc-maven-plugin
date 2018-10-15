@@ -37,7 +37,7 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 	private Logger logger = LoggerFactory.getLogger(getClass().getName());
 
-	private final boolean requireAuthentication = $rquireAuth;
+	private final static boolean REQUIRE_AUTHENTICATION = $rquireAuth;
 	private final Map<String, T> managedAgents = new HashMap<>();
 #if ($synchronized == "server" || $synchronized == "both")
 	private ExecutorService threadPool = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
@@ -139,7 +139,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 				request = JSONRPC2Request.parse(json);
 
 				// Verify that we have been authenticated
-				if (requireAuthentication && !request.getMethod().equals("Authenticate") && !managedAgent.isAuthenticated()) {
+				if (REQUIRE_AUTHENTICATION && !request.getMethod().equals("Authenticate") && !managedAgent.isAuthenticated()) {
 					logger.debug("Session {} has not been authenticated", wsSession.getId());
 					managedAgent.sendInvalidRequest("User not authenticated", (Long)request.getID());
 					return;
