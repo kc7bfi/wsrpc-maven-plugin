@@ -81,7 +81,7 @@ public abstract class ${specname}Actor {
 	/**
 	 * Constructor
 	 */
-	public ${specname}Actor(String serverUrl) {
+	public ${specname}Actor() {
 	}
 
 	/**
