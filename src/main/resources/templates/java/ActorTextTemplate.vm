@@ -56,7 +56,7 @@ public abstract class ${specname}Actor {
 
 	private int actorId = ActorCount.incrementAndGet();
 	private ClientManager client;
-	private final URI wsrpcServerUri;
+	private URI wsrpcServerUri;
 	private ClientManager.ReconnectHandler reconnectHandler;
 #if ($synchronized == "client" || $synchronized == "both")
 	private ExecutorService threadPool = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
