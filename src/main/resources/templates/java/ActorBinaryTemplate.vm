@@ -80,6 +80,12 @@ public abstract class ${specname}Actor {
 
 	/**
 	 * Constructor
+	 */
+	public ${specname}Actor(String serverUrl) {
+	}
+
+	/**
+	 * Constructor
 	 * @param serverUrl the server URL
 	 */
 	public ${specname}Actor(String serverUrl) {
