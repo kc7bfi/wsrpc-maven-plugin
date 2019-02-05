@@ -362,7 +362,7 @@ public abstract class ${specname}Agent {
 	public $request.returns ${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		JSONRPC2Response response = async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end timeout)
 				.onErrorReturn((e) -> { 
-					logger.warn("${display.uncapitalize($request.name)}: {}", ExceptionUtils.getMessage(e)); 
+					if (logger.isDebugEnabled()) logger.debug("${display.uncapitalize($request.name)}: {}", ExceptionUtils.getMessage(e)); 
 					return new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" " + ExceptionUtils.getMessage(e)), 0); 
 				})
 				.blockingGet();

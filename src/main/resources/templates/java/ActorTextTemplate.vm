@@ -122,7 +122,7 @@ public abstract class ${specname}Actor {
 			try {
 				wsSession.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "finalizer"));
 			} catch (IOException e) {
-				logger.warn("Actor {} Error closing connection to {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
+				logger.warn("Actor {} {} Error closing connection: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 			}
 		}
 	}
@@ -181,7 +181,7 @@ public abstract class ${specname}Actor {
 						authenticated.setValue(false);
 						counter++;
 						if ((counter < 10) || (counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
-							logger.warn("Actor {} Reconnecting to {} attempt {} because disconnected: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+							logger.warn("Actor {} {} Reconnecting attempt {} because disconnected: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 						}
 						return true;
 					}
@@ -190,7 +190,7 @@ public abstract class ${specname}Actor {
 					public boolean onConnectFailure(Exception exception) {
 						counter++;
 						if ((counter < 10) || (counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
-							logger.warn("Actor {} Reconnecting to {} attempt {} because connect failed: {}: {}", actorId, wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
+							logger.warn("Actor {} {} Reconnecting attempt {} because connect failed: {}: {}", actorId, wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
 						}
 						return true;
 					}
@@ -207,11 +207,11 @@ public abstract class ${specname}Actor {
 			synchronized (authenticated) {
 				if (authenticated.booleanValue()) return true;
 				authenticated.wait(connectTimeout);
-				if (!authenticated.booleanValue()) logger.warn("Actor {} Timed out waiting for authentication", actorId);
+				if (!authenticated.booleanValue()) logger.warn("Actor {} {} Timed out waiting for authentication", actorId, wsrpcServerUri);
 				return authenticated.booleanValue();
 			}
 		} catch (Throwable e) {
-			logger.warn("Actor {} Error connecting to server {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e)); e.printStackTrace();
+			logger.warn("Actor {} {} Error connecting to server: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e)); e.printStackTrace();
 			return false;
 		}
 	}
@@ -234,7 +234,7 @@ public abstract class ${specname}Actor {
 			if (connectFuture != null && !connectFuture.isDone() && !connectFuture.isCancelled()) connectFuture.cancel(true);
 			if (wsSession != null) wsSession.close(closeReason);
 		} catch (IOException e) {
-			logger.warn("Actor {} Error closing connection to {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
+			logger.warn("Actor {} {} Error closing connection: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
 		wsSession = null;
 		client = null;
@@ -278,7 +278,7 @@ public abstract class ${specname}Actor {
 						}
 					},
 					authError -> {
-						logger.warn("Actor {} Error authenticating with JWT {}: {}", actorId, userJwtToken, ExceptionUtils.getMessage(authError));
+						logger.warn("Actor {} {} Error authenticating with JWT {}: {}", actorId, wsrpcServerUri, userJwtToken, ExceptionUtils.getMessage(authError));
 						synchronized (authenticated) {
 							authenticated.setValue(false);
 							authenticated.notify();
@@ -287,7 +287,7 @@ public abstract class ${specname}Actor {
 					}
 					));
 		} catch (IOException e) {
-			logger.warn("Actor {} Error sending authenticate request: {}", actorId, ExceptionUtils.getMessage(e));
+			logger.warn("Actor {} {} Error sending authenticate request: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 			authenticated.setValue(false);
 			authenticated.notify();
 			close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error"));
@@ -314,8 +314,7 @@ public abstract class ${specname}Actor {
 	 */
 	@OnError
 	public void onError(Session wsSession, Throwable error) {
-		logger.warn("Actor {} WebSocket error at {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(error));
-		error.printStackTrace();
+		logger.warn("Actor {} {} WebSocket error: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(error), error);
 	}
 	
 	/**
@@ -350,7 +349,7 @@ public abstract class ${specname}Actor {
 		try {
 			wsSession.getBasicRemote().sendText(new JSONRPC2Response(requestId).toJSONString());
 		} catch (Exception e) {
-			logger.warn("Actor {} Error sending response to {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
+			logger.warn("Actor {} {} Error sending response: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
 	}
 
@@ -363,7 +362,7 @@ public abstract class ${specname}Actor {
 		try {
 			wsSession.getBasicRemote().sendText(new JSONRPC2Response(result, requestId).toJSONString());
 		} catch (Exception e) {
-			logger.warn("Actor {} Error sending response to {}: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
+			logger.warn("Actor {} {} Error sending response: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
 	}
 
@@ -402,7 +401,7 @@ public abstract class ${specname}Actor {
 		} catch (JSONRPC2ParseException e) {
 			if (logger.isDebugEnabled()) logger.debug("Actor {} Error processing response message {}: {}", actorId, json, ExceptionUtils.getMessage(e));
 		} catch (Throwable e) {
-			logger.warn("Actor {} Error processing response message {} from {}: {}", actorId, json, wsrpcServerUri, ExceptionUtils.getMessage(e));
+			logger.warn("Actor {} {} Error processing response message {}: {}", actorId, wsrpcServerUri, json, ExceptionUtils.getMessage(e));
 		}
 
 		// process the message
@@ -421,7 +420,7 @@ public abstract class ${specname}Actor {
 		} catch (JSONRPC2ParseException e) {
 			if (logger.isDebugEnabled()) logger.debug("Actor {} Error processing message {}: {}", actorId, json, ExceptionUtils.getMessage(e));
 		} catch (Throwable e) {
-			logger.warn("Actor {} Error processing message {} from {}: {}", actorId, json, wsrpcServerUri, ExceptionUtils.getMessage(e), e);
+			logger.warn("Actor {} {} Error processing message {}: {}", actorId, wsrpcServerUri, json, ExceptionUtils.getMessage(e), e);
 		}
 	}
 
@@ -460,7 +459,7 @@ public abstract class ${specname}Actor {
 	public $request.returns ${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		JSONRPC2Response response = async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end timeout)
 				.onErrorReturn((e) -> { 
-					logger.warn("${display.uncapitalize($request.name)}: {}", ExceptionUtils.getMessage(e)); 
+					if (logger.isDebugEnabled()) logger.debug("${display.uncapitalize($request.name)}: {}", ExceptionUtils.getMessage(e)); 
 					return new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" " + ExceptionUtils.getMessage(e)), 0); 
 				})
 				.blockingGet();

@@ -70,8 +70,7 @@ public class $display.capitalize($className) {
 			JSONObject jsonObj = (JSONObject)parser.parse(json);
 			return parse(jsonObj);
 		} catch (Exception e) {
-			LOGGER.warn("Error parsing JSON string {}: {}", json, ExceptionUtils.getMessage(e)); 
-			e.printStackTrace();
+			LOGGER.warn("Error parsing JSON string {}: {}", json, ExceptionUtils.getMessage(e), e); 
 			return null;
 		}
 	}
@@ -111,8 +110,7 @@ public class $display.capitalize($className) {
 #end
 			return newObj;
 		} catch (Exception e) {
-			LOGGER.warn("Error parsing JSON object: {}", ExceptionUtils.getMessage(e)); 
-			e.printStackTrace();
+			LOGGER.warn("Error parsing JSON object: {}", ExceptionUtils.getMessage(e), e); 
 			return null;
 		}
 	}

@@ -91,8 +91,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 	 */
 	@OnError
 	public void onError(Session wsSession, Throwable error) {
-		logger.warn("WebSocket error: {}", error.getMessage() == null ? error.toString() : error.getMessage());
-		error.printStackTrace();
+		logger.warn("WebSocket error: {}", error.getMessage() == null ? error.toString() : error.getMessage(), error);
 		T managedAgent = managedAgents.remove(wsSession.getId());
 		if (managedAgent != null) managedAgent.onAgentRemoved(managedAgent);
 	}
