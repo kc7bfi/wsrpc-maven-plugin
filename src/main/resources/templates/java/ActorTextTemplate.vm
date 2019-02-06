@@ -40,6 +40,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.Single;
 import net.minidev.json.JSONObject;
+import net.psgglobal.wsrpc.core.WsRpcCompositFuture;
 import net.psgglobal.wsrpc.core.WsRpcResponseQueue;
 
 /**
@@ -58,10 +59,11 @@ public abstract class ${specname}Actor {
 	private ClientManager client;
 	private URI wsrpcServerUri;
 	private ClientManager.ReconnectHandler reconnectHandler;
+	private final WsRpcCompositFuture compositFutures = new WsRpcCompositFuture();
 #if ($synchronized == "client" || $synchronized == "both")
 	private ExecutorService threadPool = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
 #else
-	private ExecutorService threadPool = Executors.newCachedThreadPool(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
+	private static ExecutorService threadPool = Executors.newCachedThreadPool(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
 #end
 	private final CompositeDisposable compositeDisposable = new CompositeDisposable();
 
@@ -302,7 +304,12 @@ public abstract class ${specname}Actor {
 	@OnClose
 	public void onClose(CloseReason closeReason, Session wsSession) {
 		logger.info("Actor {} Closing connection to {} due to {} {}", actorId, wsrpcServerUri, closeReason.getCloseCode(), closeReason.getReasonPhrase());
-		if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) threadPool.shutdown();
+		if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) {
+			compositFutures.cancelRemaining(true);
+#if ($synchronized == "server" || $synchronized == "both")
+			threadPool.shutdown();
+#end
+		}
 		this.wsSession = null;
 		authenticated.setValue(false);
 	}
@@ -410,10 +417,10 @@ public abstract class ${specname}Actor {
 
 			// process methods
 #foreach ($request in $serverRequests)
-			if (${display.capitalize($request.name)}Request.canNarrow(request)) threadPool.execute(() -> on${display.capitalize($request.name)}(${display.capitalize($request.name)}Request.narrow(request)));
+			if (${display.capitalize($request.name)}Request.canNarrow(request)) compositFutures.add(threadPool.submit(() -> on${display.capitalize($request.name)}(${display.capitalize($request.name)}Request.narrow(request))));
 #end
 #foreach ($notice in $serverNotices)
-			if (${display.capitalize($notice.name)}Notice.canNarrow(request)) threadPool.execute(() -> on${display.capitalize($notice.name)}(${display.capitalize($notice.name)}Notice.narrow(request)));
+			if (${display.capitalize($notice.name)}Notice.canNarrow(request)) compositFutures.add(threadPool.submit(() -> on${display.capitalize($notice.name)}(${display.capitalize($notice.name)}Notice.narrow(request))));
 #end
 
 			return;

@@ -25,6 +25,7 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2ParseException;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
+import net.psgglobal.wsrpc.core.WsRpcCompositFuture;
 
 /**
  * Generated with Velocity - DO NOT EDIT
@@ -39,6 +40,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 
 	private final static boolean REQUIRE_AUTHENTICATION = $rquireAuth;
 	private final Map<String, T> managedAgents = new HashMap<>();
+	private final WsRpcCompositFuture compositFutures = new WsRpcCompositFuture();
 #if ($synchronized == "server" || $synchronized == "both")
 	private ExecutorService threadPool = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
 #else
@@ -84,6 +86,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 			managedAgent.onAgentRemoved(managedAgent);
 			managedAgent.close();
 		}
+		compositFutures.cancelRemaining(true);
 #if ($synchronized == "server" || $synchronized == "both")
 		threadPool.shutdown();
 #end
@@ -148,10 +151,10 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 				final JSONRPC2Request finalRequest = request;
 				if (request.getMethod().equals("Authenticate")) doAuthenticate(managedAgent, request);
 #foreach ($request in $clientRequests)
-				else if (${display.capitalize($request.name)}Request.canNarrow(request)) threadPool.execute(() -> managedAgent.on${display.capitalize($request.name)}(${display.capitalize($request.name)}Request.narrow(finalRequest)));
+				else if (${display.capitalize($request.name)}Request.canNarrow(request)) compositFutures.add(threadPool.submit(() -> managedAgent.on${display.capitalize($request.name)}(${display.capitalize($request.name)}Request.narrow(finalRequest))));
 #end
 #foreach ($notice in $clientNotices)
-				else if (${display.capitalize($notice.name)}Notice.canNarrow(request)) threadPool.execute(() -> managedAgent.on${display.capitalize($notice.name)}(${display.capitalize($notice.name)}Notice.narrow(finalRequest)));
+				else if (${display.capitalize($notice.name)}Notice.canNarrow(request)) compositFutures.add(threadPool.submit(() -> managedAgent.on${display.capitalize($notice.name)}(${display.capitalize($notice.name)}Notice.narrow(finalRequest))));
 #end
 				return;
 			} catch (JSONRPC2ParseException ee) {
