@@ -123,6 +123,7 @@ public abstract class ${specname}Actor {
 			logger.error("Actor {} connected to {} is being garbage collected but was not closed. Closing...", actorId, wsrpcServerUri);
 			try {
 				wsSession.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "finalizer"));
+				if (client != null) client.shutdown();
 			} catch (IOException e) {
 				logger.warn("Actor {} {} Error closing connection: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 			}
@@ -239,7 +240,12 @@ public abstract class ${specname}Actor {
 			logger.warn("Actor {} {} Error closing connection: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
 		wsSession = null;
-		client = null;
+		
+		// on normal close, shutdown client
+		if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) {
+			if (client != null) client.shutdown();
+			client = null;
+		}
 	}
 	
 	/**
