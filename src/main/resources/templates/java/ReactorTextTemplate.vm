@@ -35,7 +35,7 @@ import net.psgglobal.wsrpc.core.WsRpcCompositFuture;
  * This class supports text communications via the WebSocket
  */
 public abstract class ${specname}Reactor<T extends ${specname}Agent> {
-	private Logger logger = LoggerFactory.getLogger(getClass().getName());
+	protected Logger logger = LoggerFactory.getLogger(getClass().getName());
 
 	private final static boolean REQUIRE_AUTHENTICATION = $rquireAuth;
 	private final Map<String, T> managedAgents = new HashMap<>();

@@ -34,7 +34,7 @@ import io.reactivex.Single;
  * This class supports binary communications via the WebSocket
  */
 public abstract class ${specname}Agent {
-	private Logger logger = LoggerFactory.getLogger(getClass().getName());
+	protected Logger logger = LoggerFactory.getLogger(getClass().getName());
 	
 	protected Session wsSession;
 	protected DecodedJWT jwtAuthentication;

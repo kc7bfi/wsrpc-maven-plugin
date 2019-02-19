@@ -51,7 +51,7 @@ import net.psgglobal.wsrpc.core.WsRpcResponseQueue;
  * This class supports binary communications via the WebSocket
  */
 public abstract class ${specname}Actor {
-	private Logger logger = LoggerFactory.getLogger(getClass().getName());
+	protected Logger logger = LoggerFactory.getLogger(getClass().getName());
 	private static AtomicInteger ActorCount = new AtomicInteger();
 	private static AtomicLong LastRequestId = new AtomicLong();
 
@@ -164,7 +164,7 @@ public abstract class ${specname}Actor {
 		authenticated.setValue(false);
 		
 		try {
-			if (logger.isDebugEnabled()) logger.debug("Actor {} Connecting to {}", actorId, wsrpcServerUri);
+			if (logger.isDebugEnabled()) logger.debug("Actor {} connecting to {}", actorId, wsrpcServerUri);
 			client = ClientManager.createClient();
 			client.getProperties().put(ClientProperties.SHARED_CONTAINER, true);
 			client.getProperties().put(ClientProperties.SHARED_CONTAINER_IDLE_TIMEOUT, 5);
@@ -183,18 +183,14 @@ public abstract class ${specname}Actor {
 						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
 						authenticated.setValue(false);
 						counter++;
-						if ((counter < 10) || (counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
-							logger.warn("Actor {} {} Reconnecting attempt {} because disconnected: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
-						}
+						if (logger.isDebugEnabled()) logger.debug("Actor {} reconnecting to {} attempt {} because closed: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 						return true;
 					}
 
 					@Override
 					public boolean onConnectFailure(Exception exception) {
 						counter++;
-						if ((counter < 10) || (counter < 100 && counter % 10 == 0) || (counter >= 100 && counter % 100 == 0)) {
-							logger.warn("Actor {} {} Reconnecting attempt {} because connect failed: {}: {}", actorId, wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
-						}
+						if (logger.isDebugEnabled()) logger.debug("Actor {} reconnecting to {} attempt {} because connect failed: {}: {}", actorId, wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
 						return true;
 					}
 					
@@ -283,7 +279,7 @@ public abstract class ${specname}Actor {
 	 */
 	@OnOpen
 	public void onOpen(Session wsSession) {
-		if (logger.isDebugEnabled()) logger.debug("Actor {} Connected to {} on session {}", actorId, wsrpcServerUri, wsSession.getId());
+		if (logger.isDebugEnabled()) logger.debug("Actor {} opened to {} with session id {}", actorId, wsrpcServerUri, wsSession.getId());
 		this.wsSession = wsSession;
 #if ($maxBinaryMessageSize != "0")
 		this.wsSession.setMaxBinaryMessageBufferSize($maxBinaryMessageSize);
@@ -331,9 +327,9 @@ public abstract class ${specname}Actor {
 	 */
 	@OnClose
 	public void onClose(CloseReason closeReason, Session wsSession) {
-		logger.info("Actor {} Closing connection to {} due to {} {}", actorId, wsrpcServerUri, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+		logger.info("Actor {} closed connection to {} due to {} {}", actorId, wsrpcServerUri, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+		compositFutures.cancelRemaining(true);
 		if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) {
-			compositFutures.cancelRemaining(true);
 #if ($synchronized == "server" || $synchronized == "both")
 			threadPool.shutdown();
 #end
