@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -65,6 +66,7 @@ public abstract class ${specname}Actor {
 #else
 	private static ExecutorService threadPool = Executors.newCachedThreadPool(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
 #end
+	private static ScheduledExecutorService schedulePool = Executors.newScheduledThreadPool(1, new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-sched-%d").build());
 	private final CompositeDisposable compositeDisposable = new CompositeDisposable();
 
 	protected final WsRpcResponseQueue responses = new WsRpcResponseQueue();
@@ -161,7 +163,10 @@ public abstract class ${specname}Actor {
 	 */
 	public synchronized boolean connect(Map<String, Object> clientProperties, int connectTimeout) {
 		if (client != null) return true;
-		authenticated.setValue(false);
+		synchronized (authenticated) {
+			authenticated.setValue(false);
+			authenticated.notify();
+		}
 		
 		try {
 			if (logger.isDebugEnabled()) logger.debug("Actor {} connecting to {}", actorId, wsrpcServerUri);
@@ -181,7 +186,10 @@ public abstract class ${specname}Actor {
 					@Override
 					public boolean onDisconnect(CloseReason closeReason) {
 						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
-						authenticated.setValue(false);
+						synchronized (authenticated) {
+							authenticated.setValue(false);
+							authenticated.notify();
+						}
 						counter++;
 						if (logger.isDebugEnabled()) logger.debug("Actor {} reconnecting to {} attempt {} because closed: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 						return true;
@@ -289,7 +297,7 @@ public abstract class ${specname}Actor {
 		try {
 			if (userJwtToken == null) {
 				logger.info("Actor {} No JWT authentication code available", actorId);
-				wsSession.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Not Authenticated"));
+				schedulePool.schedule(() -> close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Not Authenticated")), 500, TimeUnit.MILLISECONDS);
 				return;
 			}
 			Map<String, Object> params = new HashMap<>();
@@ -308,14 +316,16 @@ public abstract class ${specname}Actor {
 						synchronized (authenticated) {
 							authenticated.setValue(false);
 							authenticated.notify();
-							close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error"));
+							schedulePool.schedule(() -> close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error")), 500, TimeUnit.MILLISECONDS);
 						}
 					}
 					));
 		} catch (IOException e) {
 			logger.warn("Actor {} {} Error sending authenticate request: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
-			authenticated.setValue(false);
-			authenticated.notify();
+			synchronized (authenticated) {
+				authenticated.setValue(false);
+				authenticated.notify();
+			}
 			close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error"));
 		}
 	}
@@ -335,7 +345,10 @@ public abstract class ${specname}Actor {
 #end
 		}
 		this.wsSession = null;
-		authenticated.setValue(false);
+		synchronized (authenticated) {
+			authenticated.setValue(false);
+			authenticated.notify();
+		}
 	}
 
 	/**
