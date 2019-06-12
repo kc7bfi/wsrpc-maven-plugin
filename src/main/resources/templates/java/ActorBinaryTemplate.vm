@@ -303,11 +303,13 @@ public abstract class ${specname}Actor {
 			Map<String, Object> params = new HashMap<>();
 			params.put("token", userJwtToken);
 			JSONRPC2Request request = new JSONRPC2Request("Authenticate", params, LastRequestId.incrementAndGet());
+			if (logger.isDebugEnabled()) logger.debug("Send authentication: {}", request.toJSONString());
 			wsSession.getBasicRemote().sendBinary(stringByteBuffer(request.toJSONString()));
 			addDisposable(responses.onResponse(request.getID(), 10 * 1000).subscribe(
 					authResponse -> {
 						synchronized (authenticated) {
 							authenticated.setValue(!authResponse.indicatesSuccess() ? false : (boolean)authResponse.getResult());
+							if (!authenticated.getValue()) logger.warn("Authentication failed: {}", authResponse.toJSONString());
 							authenticated.notify();
 						}
 					},
