@@ -165,7 +165,7 @@ public abstract class ${specname}Actor {
 		if (client != null) return true;
 		synchronized (authenticated) {
 			authenticated.setValue(false);
-			authenticated.notify();
+			authenticated.notifyAll();
 		}
 		
 		try {
@@ -188,7 +188,7 @@ public abstract class ${specname}Actor {
 						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
 						synchronized (authenticated) {
 							authenticated.setValue(false);
-							authenticated.notify();
+							authenticated.notifyAll();
 						}
 						counter++;
 						if (logger.isDebugEnabled()) logger.debug("Actor {} reconnecting to {} attempt {} because closed: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
@@ -307,17 +307,18 @@ public abstract class ${specname}Actor {
 			wsSession.getBasicRemote().sendBinary(stringByteBuffer(request.toJSONString()));
 			addDisposable(responses.onResponse(request.getID(), 10 * 1000).subscribe(
 					authResponse -> {
+						if (logger.isDebugEnabled()) logger.debug("Authentication response: {}", authResponse.toJSONString());
 						synchronized (authenticated) {
 							authenticated.setValue(!authResponse.indicatesSuccess() ? false : (boolean)authResponse.getResult());
 							if (!authenticated.getValue()) logger.warn("Authentication failed: {}", authResponse.toJSONString());
-							authenticated.notify();
+							authenticated.notifyAll();
 						}
 					},
 					authError -> {
 						logger.warn("Actor {} {} Error authenticating with JWT {}: {}", actorId, wsrpcServerUri, userJwtToken, ExceptionUtils.getMessage(authError));
 						synchronized (authenticated) {
 							authenticated.setValue(false);
-							authenticated.notify();
+							authenticated.notifyAll();
 							schedulePool.schedule(() -> close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error")), 500, TimeUnit.MILLISECONDS);
 						}
 					}
@@ -326,7 +327,7 @@ public abstract class ${specname}Actor {
 			logger.warn("Actor {} {} Error sending authenticate request: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 			synchronized (authenticated) {
 				authenticated.setValue(false);
-				authenticated.notify();
+				authenticated.notifyAll();
 			}
 			close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error"));
 		}
@@ -349,7 +350,7 @@ public abstract class ${specname}Actor {
 		this.wsSession = null;
 		synchronized (authenticated) {
 			authenticated.setValue(false);
-			authenticated.notify();
+			authenticated.notifyAll();
 		}
 	}
 
