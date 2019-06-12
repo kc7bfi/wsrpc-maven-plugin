@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -39,10 +40,10 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.Single;
 import net.minidev.json.JSONObject;
 import net.psgglobal.wsrpc.core.WsRpcCompositFuture;
-import net.psgglobal.wsrpc.core.WsRpcResponseQueue;
 
 /**
  * Generated with Velocity - DO NOT EDIT
@@ -68,8 +69,9 @@ public abstract class ${specname}Actor {
 #end
 	private static ScheduledExecutorService schedulePool = Executors.newScheduledThreadPool(1, new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-sched-%d").build());
 	private final CompositeDisposable compositeDisposable = new CompositeDisposable();
+	private final Semaphore authenticationSemophore = new Semaphore(0);
 
-	protected final WsRpcResponseQueue responses = new WsRpcResponseQueue();
+	protected final Map<Long, BehaviorSubject<JSONRPC2Response>> responseSubjects = new HashMap<>();
 	protected SslEngineConfigurator sslEngineConfigurator;
 	protected Session wsSession;
 	protected Future<Session> connectFuture;
@@ -163,10 +165,8 @@ public abstract class ${specname}Actor {
 	 */
 	public synchronized boolean connect(Map<String, Object> clientProperties, int connectTimeout) {
 		if (client != null) return true;
-		synchronized (authenticated) {
-			authenticated.setValue(false);
-			authenticated.notifyAll();
-		}
+		authenticated.setValue(false);
+		authenticationSemophore.drainPermits();
 		
 		try {
 			if (logger.isDebugEnabled()) logger.debug("Actor {} connecting to {}", actorId, wsrpcServerUri);
@@ -186,10 +186,8 @@ public abstract class ${specname}Actor {
 					@Override
 					public boolean onDisconnect(CloseReason closeReason) {
 						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
-						synchronized (authenticated) {
-							authenticated.setValue(false);
-							authenticated.notifyAll();
-						}
+						authenticated.setValue(false);
+						authenticationSemophore.release();
 						counter++;
 						if (logger.isDebugEnabled()) logger.debug("Actor {} reconnecting to {} attempt {} because closed: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 						return true;
@@ -211,14 +209,10 @@ public abstract class ${specname}Actor {
 			connectFuture = client.asyncConnectToServer(this, wsrpcServerUri);
 
 			// wait for authentication
-			synchronized (authenticated) {
-				if (authenticated.booleanValue()) return true;
-				authenticated.wait(connectTimeout);
-				if (!authenticated.booleanValue()) logger.warn("Actor {} {} Timed out waiting for authentication", actorId, wsrpcServerUri);
-				return authenticated.booleanValue();
-			}
+			if (!authenticationSemophore.tryAcquire(connectTimeout, TimeUnit.MILLISECONDS)) logger.warn("Actor {} {} Timed out waiting for authentication", actorId, wsrpcServerUri);
+			return authenticated.booleanValue();
 		} catch (Throwable e) {
-			logger.warn("Actor {} {} Error connecting to server: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e)); e.printStackTrace();
+			logger.warn("Actor {} {} Error connecting to server: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e), e);
 			return false;
 		}
 	}
@@ -304,31 +298,27 @@ public abstract class ${specname}Actor {
 			params.put("token", userJwtToken);
 			JSONRPC2Request request = new JSONRPC2Request("Authenticate", params, LastRequestId.incrementAndGet());
 			if (logger.isDebugEnabled()) logger.debug("Send authentication: {}", request.toJSONString());
+			BehaviorSubject<JSONRPC2Response> responseSubject = BehaviorSubject.create();
+			responseSubjects.put((Long)request.getID(), responseSubject);
 			wsSession.getBasicRemote().sendBinary(stringByteBuffer(request.toJSONString()));
-			addDisposable(responses.onResponse(request.getID(), 10 * 1000).subscribe(
+			addDisposable(responseSubject.singleOrError().timeout(10, TimeUnit.SECONDS).subscribe(
 					authResponse -> {
 						if (logger.isDebugEnabled()) logger.debug("Authentication response: {}", authResponse.toJSONString());
-						synchronized (authenticated) {
-							authenticated.setValue(!authResponse.indicatesSuccess() ? false : (boolean)authResponse.getResult());
-							if (!authenticated.getValue()) logger.warn("Authentication failed: {}", authResponse.toJSONString());
-							authenticated.notifyAll();
-						}
+						authenticated.setValue(!authResponse.indicatesSuccess() ? false : (boolean)authResponse.getResult());
+						if (!authenticated.getValue()) logger.warn("Authentication failed: {}", authResponse.toJSONString());
+						authenticationSemophore.release();
 					},
 					authError -> {
 						logger.warn("Actor {} {} Error authenticating with JWT {}: {}", actorId, wsrpcServerUri, userJwtToken, ExceptionUtils.getMessage(authError));
-						synchronized (authenticated) {
-							authenticated.setValue(false);
-							authenticated.notifyAll();
-							schedulePool.schedule(() -> close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error")), 500, TimeUnit.MILLISECONDS);
-						}
+						authenticated.setValue(false);
+						authenticationSemophore.release();
+						schedulePool.schedule(() -> close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error")), 500, TimeUnit.MILLISECONDS);
 					}
 					));
 		} catch (IOException e) {
 			logger.warn("Actor {} {} Error sending authenticate request: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
-			synchronized (authenticated) {
-				authenticated.setValue(false);
-				authenticated.notifyAll();
-			}
+			authenticated.setValue(false);
+			authenticationSemophore.release();
 			close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error"));
 		}
 	}
@@ -348,10 +338,8 @@ public abstract class ${specname}Actor {
 #end
 		}
 		this.wsSession = null;
-		synchronized (authenticated) {
-			authenticated.setValue(false);
-			authenticated.notifyAll();
-		}
+		authenticated.setValue(false);
+		authenticationSemophore.release();
 	}
 
 	/**
@@ -452,7 +440,13 @@ public abstract class ${specname}Actor {
 		// process results
 		try {
 			JSONRPC2Response response = JSONRPC2Response.parse(json);
-			responses.addResponse((Long)response.getID(), response);
+			if (!responseSubjects.containsKey(response.getID())) {
+				logger.warn("No one waiting for response {}: {}", response.getID(), response.toJSONString());
+			} else {
+				BehaviorSubject<JSONRPC2Response> responseSubject = responseSubjects.remove(response.getID());
+				responseSubject.onNext(response);
+				responseSubject.onComplete();
+			}
 			return;
 		} catch (JSONRPC2ParseException e) {
 			if (logger.isDebugEnabled()) logger.debug("Actor {} Error processing response message {}: {}", actorId, json, ExceptionUtils.getMessage(e));
@@ -496,8 +490,10 @@ public abstract class ${specname}Actor {
 			return  Single.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Not connected"), 0));
 		}
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end LastRequestId.incrementAndGet());
+		BehaviorSubject<JSONRPC2Response> responseSubject = BehaviorSubject.create();
+		responseSubjects.put(request.getRequestId(), responseSubject);
 		wsSession.getBasicRemote().sendBinary(stringByteBuffer(request.toJSONString()));
-		return responses.onResponse(request.getRequestId(), timeout);
+		return responseSubject.singleOrError().timeout(timeout, TimeUnit.MILLISECONDS);
 	}
 
 #end

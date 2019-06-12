@@ -2,6 +2,8 @@ package $packageName;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -14,7 +16,6 @@ import org.slf4j.MDC;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import net.minidev.json.JSONObject;
-import net.psgglobal.wsrpc.core.WsRpcResponseQueue;
 import net.psgglobal.wsrpc.core.WsRpcException;
 import net.psgglobal.wsrpc.core.WsRpcInternalErrorException;
 import net.psgglobal.wsrpc.core.WsRpcInvalidRequestException;
@@ -24,6 +25,7 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.Single;
 
 /**
@@ -38,7 +40,7 @@ public abstract class ${specname}Agent {
 	
 	protected Session wsSession;
 	protected DecodedJWT jwtAuthentication;
-	protected WsRpcResponseQueue responses = new WsRpcResponseQueue();
+	protected final Map<Long, BehaviorSubject<JSONRPC2Response>> responseSubjects = new HashMap<>();
 	protected AtomicLong lastRequestId = new AtomicLong();
 	private final CompositeDisposable compositeDisposable = new CompositeDisposable();
 
@@ -64,12 +66,17 @@ public abstract class ${specname}Agent {
 	}
 
 	/**
-	 * Add a response to the response queue
-	 * @param requestId the request id the the response is for
+	 * Process a response
 	 * @param response the response
 	 */
-	protected void addResponse(long requestId, JSONRPC2Response response) {
-		responses.addResponse(requestId, response);
+	public void processResponse(JSONRPC2Response response) {
+		if (!responseSubjects.containsKey(response.getID())) {
+			logger.warn("No one waiting for response {}: {}", response.getID(), response.toJSONString());
+		} else {
+			BehaviorSubject<JSONRPC2Response> responseSubject = responseSubjects.remove(response.getID());
+			responseSubject.onNext(response);
+			responseSubject.onComplete();
+		}
 	}
 
 	/**
@@ -295,8 +302,10 @@ public abstract class ${specname}Agent {
 	 */
 	public Single<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end lastRequestId.incrementAndGet());
+		BehaviorSubject<JSONRPC2Response> responseSubject = BehaviorSubject.create();
+		responseSubjects.put(request.getRequestId(), responseSubject);
 		wsSession.getBasicRemote().sendText(request.toJSONString());
-		return responses.onResponse(request.getRequestId(), timeout);
+		return responseSubject.singleOrError().timeout(timeout, TimeUnit.MILLISECONDS);
 	}
 	
 #end
