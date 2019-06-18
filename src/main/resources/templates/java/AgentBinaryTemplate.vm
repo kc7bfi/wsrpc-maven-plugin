@@ -133,6 +133,7 @@ public abstract class ${specname}Agent {
 	 * @param requestId the request id
 	 */
 	public void sendInternalError(String error, long requestId) throws IOException {
+		if (logger.isDebugEnabled()) logger.debug("Send internal error: {} for request {}", error, requestId); 
 		wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(error), requestId).toJSONString()));
 	}
 
@@ -178,6 +179,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentInternalError(String error, long requestId) {
 		try {
+			if (logger.isDebugEnabled()) logger.debug("Send internal error: {} for request {}", error, requestId); 
 			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(error), requestId).toJSONString()));
 		} catch (Exception e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));

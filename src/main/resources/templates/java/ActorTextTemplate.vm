@@ -485,7 +485,10 @@ public abstract class ${specname}Actor {
 				})
 				.blockingGet();
 		if (response == null) throw new IOException("TimeOut");
-		if (response.getError() != null) throw new IOException(response.getError().getMessage());
+		if (response.getError() != null) {
+			if (logger.isDebugEnabled()) logger.debug("${display.uncapitalize($request.name)}: returned error {}", response.getError().getMessage()); 
+			throw new IOException(response.getError().getMessage());
+		}
 #if ($request.returns == "void")
 #elseif ($request.returns.indexOf(".") > 0)
 		return ${request.returns}.parse((JSONObject)response.getResult());
