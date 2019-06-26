@@ -428,14 +428,14 @@ public abstract class ${specname}Actor {
 		// check for binary message
 		if (message.get(0) == (byte)'!') {
 			message.get();
-			logger.debug("Actor {} OnMessage binary: length {}", actorId, message.remaining());
+			if (logger.isDebugEnabled()) logger.debug("Actor {} OnMessage binary: length {}", actorId, message.remaining());
 			binaryDataQueue.offer(message);
 			return;
 		}
 
 		// JSON message
 		String json = byteBufferString(message);
-		logger.debug("Actor {} OnMessage JSON: {}", actorId, json);
+		if (logger.isDebugEnabled()) logger.debug("Actor {} OnMessage JSON: {}", actorId, json);
 
 		// process results
 		try {
@@ -486,7 +486,7 @@ public abstract class ${specname}Actor {
 	 */
 	public Single<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end  int timeout) throws IOException {
 		if (!authenticated.booleanValue()) {
-			logger.debug("Actor {} WebSocket not connected", actorId);
+			if (logger.isDebugEnabled()) logger.debug("Actor {} WebSocket not connected", actorId);
 			return  Single.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Not connected"), 0));
 		}
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end LastRequestId.incrementAndGet());

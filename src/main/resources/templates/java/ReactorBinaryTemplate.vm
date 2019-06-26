@@ -68,7 +68,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 	 */
 	@OnOpen
 	public void onOpen(Session wsSession) {
-		logger.debug("WsSession {} opened", wsSession.getId());
+		if (logger.isDebugEnabled()) logger.debug("WsSession {} opened", wsSession.getId());
 #if ($maxBinaryMessageSize != "0")
 		wsSession.setMaxBinaryMessageBufferSize($maxBinaryMessageSize);
 #end
@@ -82,7 +82,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 	 */
 	@OnClose
 	public void onClose(Session wsSession) {
-		logger.debug("WsSession {} closed", wsSession.getId());
+		if (logger.isDebugEnabled()) logger.debug("WsSession {} closed", wsSession.getId());
 		T managedAgent = managedAgents.remove(wsSession.getId());
 		if (managedAgent != null) {
 			managedAgent.onAgentRemoved(managedAgent);
@@ -123,7 +123,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 	@OnMessage
 	public void onMessage(Session wsSession, ByteBuffer message) {
 		String json = byteBufferString(message);
-		logger.debug("OnMessage: {}", json);
+		if (logger.isDebugEnabled()) logger.debug("OnMessage: {}", json);
 		T managedAgent = managedAgents.get(wsSession.getId());
 		if (managedAgent == null) {
 			logger.warn("Managed session for {} is unknown", wsSession.getId());
@@ -144,7 +144,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 
 				// Verify that we have been authenticated
 				if (REQUIRE_AUTHENTICATION && !request.getMethod().equals("Authenticate") && !managedAgent.isAuthenticated()) {
-					logger.debug("Session {} has not been authenticated", wsSession.getId());
+					if (logger.isDebugEnabled()) logger.debug("Session {} has not been authenticated", wsSession.getId());
 					managedAgent.sendInvalidRequest("User not authenticated", (Long)request.getID());
 					return;
 				}
@@ -182,12 +182,12 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 			DecodedJWT jwtAuthentication = valiateJWTToken((String) request.getNamedParams().get("token"));
 			managedAgent.setJwtAuthentication(jwtAuthentication);
 			managedAgent.sendResponse(true, (Long)request.getID());
-			logger.debug("WsSession {} authenticated", managedAgent.getWsSessionId());
+			if (logger.isDebugEnabled()) logger.debug("WsSession {} authenticated", managedAgent.getWsSessionId());
 		} catch (JWTVerificationException e) {
-			logger.debug("Invalid authentication token for session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e));
+			if (logger.isDebugEnabled()) logger.debug("Invalid authentication token for session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e));
 			managedAgent.sendSilentInvalidRequest("Invalid authentication token", (Long)request.getID());
 		} catch (NullPointerException e) {
-			logger.debug("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e), e);
+			if (logger.isDebugEnabled()) logger.debug("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e), e);
 			managedAgent.sendSilentInternalError(e.getMessage(), (Long)request.getID());
 		} catch (Exception e) {
 			logger.warn("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e));
