@@ -52,7 +52,7 @@ import net.psgglobal.wsrpc.core.WsRpcCompositFuture;
  *
  * This class supports binary communications via the WebSocket
  */
-public abstract class ${specname}Actor {
+public abstract class ${specname}Actor implements AutoCloseable {
 	protected Logger logger = LoggerFactory.getLogger(getClass().getName());
 	private static AtomicInteger ActorCount = new AtomicInteger();
 	private static AtomicLong LastRequestId = new AtomicLong();
