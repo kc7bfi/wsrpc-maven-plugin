@@ -280,6 +280,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 			if (logger.isDebugEnabled()) logger.debug("Send authentication: {}", request.toJSONString());
 			BehaviorSubject<JSONRPC2Response> responseSubject = BehaviorSubject.create();
 			responseSubjects.put((Long)request.getID(), responseSubject);
+			if (logger.isDebugEnabled()) logger.debug("Send request: {}", request.toJSONString());
 			wsSession.getBasicRemote().sendText(request.toJSONString());
 			addDisposable(responseSubject.singleOrError().timeout(10, TimeUnit.SECONDS).subscribe(
 					authResponse -> {
@@ -345,6 +346,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @param error the error
 	 */
 	public void sendResponse(JSONRPC2Error error, Long requestId) throws IOException {
+		if (logger.isDebugEnabled()) logger.debug("Send error response: {} for request {}", error, requestId); 
 		wsSession.getBasicRemote().sendText(new JSONRPC2Response(error, requestId).toJSONString());
 	}
 
@@ -353,6 +355,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @param response the response
 	 */
 	public void sendResponse(JSONRPC2Response response) throws IOException {
+		if (logger.isDebugEnabled()) logger.debug("Send response: {}", response.toJSONString());
 		wsSession.getBasicRemote().sendText(response.toJSONString());
 	}
 
@@ -362,7 +365,9 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 */
 	public void sendSilentResponse(long requestId) {
 		try {
-			wsSession.getBasicRemote().sendText(new JSONRPC2Response(requestId).toJSONString());
+			String jsonResponse = new JSONRPC2Response(requestId).toJSONString();
+			if (logger.isDebugEnabled()) logger.debug("Send response: {}", jsonResponse);
+			wsSession.getBasicRemote().sendText(jsonResponse);
 		} catch (Exception e) {
 			logger.warn("Actor {} {} Error sending response: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
@@ -375,7 +380,9 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 */
 	public void sendSilentResponse(Object result, long requestId) {
 		try {
-			wsSession.getBasicRemote().sendText(new JSONRPC2Response(result, requestId).toJSONString());
+			String jsonResponse = new JSONRPC2Response(result, requestId).toJSONString();
+			if (logger.isDebugEnabled()) logger.debug("Send response: {}", jsonResponse);
+			wsSession.getBasicRemote().sendText(jsonResponse);
 		} catch (Exception e) {
 			logger.warn("Actor {} {} Error sending response: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 		}
@@ -463,6 +470,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end LastRequestId.incrementAndGet());
 		BehaviorSubject<JSONRPC2Response> responseSubject = BehaviorSubject.create();
 		responseSubjects.put(request.getRequestId(), responseSubject);
+		if (logger.isDebugEnabled()) logger.debug("Send request: {}", request.toJSONString());
 		wsSession.getBasicRemote().sendText(request.toJSONString());
 		return responseSubject.singleOrError().timeout(timeout, TimeUnit.MILLISECONDS);
 	}

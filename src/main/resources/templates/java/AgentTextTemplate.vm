@@ -85,7 +85,7 @@ public abstract class ${specname}Agent {
 	 * @param requestId the request id
 	 */
 	public void sendInternalError(String error, long requestId) throws IOException {
-		if (logger.isDebugEnabled()) logger.debug("Send internal error: {} for request {}", error, requestId); 
+		if (logger.isDebugEnabled()) logger.debug("Send InternalError: {} for request {}", error, requestId); 
 		wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(error), requestId).toJSONString());
 	}
 
@@ -95,6 +95,7 @@ public abstract class ${specname}Agent {
 	 * @param requestId the request id
 	 */
 	public void sendInvalidParams(String error, long requestId) throws IOException {
+		if (logger.isDebugEnabled()) logger.debug("Send InvalidParams: {} for request {}", error, requestId); 
 		wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INVALID_PARAMS.appendMessage(error), requestId).toJSONString());
 	}
 
@@ -104,6 +105,7 @@ public abstract class ${specname}Agent {
 	 * @param requestId the request id
 	 */
 	public void sendInvalidRequest(String error, long requestId) throws IOException {
+		if (logger.isDebugEnabled()) logger.debug("Send InvalidRequest: {} for request {}", error, requestId); 
 		wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INVALID_REQUEST.appendMessage(error), requestId).toJSONString());
 	}
 
@@ -112,7 +114,9 @@ public abstract class ${specname}Agent {
 	 * @param requestId the original request id
 	 */
 	public void sendResponse(long requestId) throws IOException {
-		wsSession.getBasicRemote().sendText(new JSONRPC2Response(requestId).toJSONString());
+		String jsonResponse = new JSONRPC2Response(requestId).toJSONString();
+		if (logger.isDebugEnabled()) logger.debug("Send response: {}", jsonResponse); 
+		wsSession.getBasicRemote().sendText(jsonResponse);
 	}
 
 	/**
@@ -121,7 +125,9 @@ public abstract class ${specname}Agent {
 	 * @param requestId the original request id
 	 */
 	public void sendResponse(Object result, long requestId) throws IOException {
-		wsSession.getBasicRemote().sendText(new JSONRPC2Response(result, requestId).toJSONString());
+		String jsonResponse = new JSONRPC2Response(result, requestId).toJSONString();
+		if (logger.isDebugEnabled()) logger.debug("Send response: {}", jsonResponse); 
+		wsSession.getBasicRemote().sendText(jsonResponse);
 	}
 
 	/**
@@ -131,7 +137,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentInternalError(String error, long requestId) {
 		try {
-			if (logger.isDebugEnabled()) logger.debug("Send internal error: {} for request {}", error, requestId); 
+			if (logger.isDebugEnabled()) logger.debug("Send InternalError: {} for request {}", error, requestId); 
 			wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(error), requestId).toJSONString());
 		} catch (Exception e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
@@ -145,6 +151,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentInvalidParams(String error, long requestId) {
 		try {
+			if (logger.isDebugEnabled()) logger.debug("Send InvalidParams: {} for request {}", error, requestId); 
 			wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INVALID_PARAMS.appendMessage(error), requestId).toJSONString());
 		} catch (Exception e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
@@ -158,6 +165,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentInvalidRequest(String error, long requestId) {
 		try {
+			if (logger.isDebugEnabled()) logger.debug("Send InvalidRequest: {} for request {}", error, requestId); 
 			wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INVALID_REQUEST.appendMessage(error), requestId).toJSONString());
 		} catch (Exception e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
@@ -170,7 +178,9 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentResponse(long requestId) {
 		try {
-			wsSession.getBasicRemote().sendText(new JSONRPC2Response(requestId).toJSONString());
+			String jsonResponse = new JSONRPC2Response(requestId).toJSONString();
+			if (logger.isDebugEnabled()) logger.debug("Send response: {}", jsonResponse); 
+			wsSession.getBasicRemote().sendText(jsonResponse);
 		} catch (Exception e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
@@ -183,7 +193,9 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentResponse(Object result, long requestId) {
 		try {
-			wsSession.getBasicRemote().sendText(new JSONRPC2Response(result, requestId).toJSONString());
+			String jsonResponse = new JSONRPC2Response(result, requestId).toJSONString();
+			if (logger.isDebugEnabled()) logger.debug("Send response: {}", jsonResponse); 
+			wsSession.getBasicRemote().sendText(jsonResponse);
 		} catch (Exception e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
@@ -214,6 +226,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void send${display.capitalize($notice.name)}(#foreach ($parameter in $notice.parameters)$parameter.type $parameter.name#if($foreach.hasNext), #end#end) throws IOException {
 		${display.capitalize($notice.name)}Notice notice = new ${display.capitalize($notice.name)}Notice(#foreach ($parameter in $notice.parameters)$parameter.name, #end lastRequestId.incrementAndGet());
+		if (logger.isDebugEnabled()) logger.debug("Send notice: {}", notice.toJSONString()); 
 		wsSession.getBasicRemote().sendText(notice.toJSONString());
 	}
 	
@@ -285,6 +298,7 @@ public abstract class ${specname}Agent {
 		} catch (WsRpcInvalidParamsException e) {
 			sendSilentInvalidParams(ExceptionUtils.getRootCauseMessage(e), request.getRequestId());
 		} catch (Exception e) {
+			logger.warn("Error executing on${display.capitalize($request.name)}: {}", ExceptionUtils.getMessage(e), e);
 			sendSilentInternalError(ExceptionUtils.getRootCauseMessage(e), request.getRequestId());
 		}
 	}
@@ -306,6 +320,7 @@ public abstract class ${specname}Agent {
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end lastRequestId.incrementAndGet());
 		BehaviorSubject<JSONRPC2Response> responseSubject = BehaviorSubject.create();
 		responseSubjects.put(request.getRequestId(), responseSubject);
+		if (logger.isDebugEnabled()) logger.debug("Send request: {}", request.toJSONString()); 
 		wsSession.getBasicRemote().sendText(request.toJSONString());
 		return responseSubject.singleOrError().timeout(timeout, TimeUnit.MILLISECONDS);
 	}

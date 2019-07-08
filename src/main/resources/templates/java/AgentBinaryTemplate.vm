@@ -333,6 +333,7 @@ public abstract class ${specname}Agent {
 		} catch (WsRpcInvalidParamsException e) {
 			sendSilentInvalidParams(ExceptionUtils.getRootCauseMessage(e), request.getRequestId());
 		} catch (Exception e) {
+			logger.warn("Error executing on${display.capitalize($request.name)}: {}", ExceptionUtils.getMessage(e), e);
 			sendSilentInternalError(ExceptionUtils.getRootCauseMessage(e), request.getRequestId());
 		}
 	}
