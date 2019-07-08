@@ -40,9 +40,10 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2ParseException;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
+import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.AsyncSubject;
 import io.reactivex.Single;
 import net.minidev.json.JSONObject;
 import net.psgglobal.wsrpc.core.WsRpcCompositFuture;
@@ -73,7 +74,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	private final CompositeDisposable compositeDisposable = new CompositeDisposable();
 	private final Semaphore authenticationSemophore = new Semaphore(0);
 
-	protected final Map<Long, BehaviorSubject<JSONRPC2Response>> responseSubjects = new HashMap<>();
+	protected final Map<Long, AsyncSubject<JSONRPC2Response>> responseSubjects = new HashMap<>();
 	protected SslEngineConfigurator sslEngineConfigurator;
 	protected Session wsSession;
 	protected Future<Session> connectFuture;
@@ -278,11 +279,11 @@ public abstract class ${specname}Actor implements AutoCloseable {
 			params.put("token", userJwtToken);
 			JSONRPC2Request request = new JSONRPC2Request("Authenticate", params, LastRequestId.incrementAndGet());
 			if (logger.isDebugEnabled()) logger.debug("Send authentication: {}", request.toJSONString());
-			BehaviorSubject<JSONRPC2Response> responseSubject = BehaviorSubject.create();
+			AsyncSubject<JSONRPC2Response> responseSubject = AsyncSubject.create();
 			responseSubjects.put((Long)request.getID(), responseSubject);
 			if (logger.isDebugEnabled()) logger.debug("Send request: {}", request.toJSONString());
 			wsSession.getBasicRemote().sendText(request.toJSONString());
-			addDisposable(responseSubject.singleOrError().timeout(10, TimeUnit.SECONDS).subscribe(
+			addDisposable(responseSubject.timeout(10, TimeUnit.SECONDS, Observable.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Timeout"), request.getID()))).singleOrError().subscribe(
 					authResponse -> {
 						if (logger.isDebugEnabled()) logger.debug("Authentication response: {}", authResponse.toJSONString());
 						authenticated.setValue(!authResponse.indicatesSuccess() ? false : (boolean)authResponse.getResult());
@@ -421,7 +422,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 			if (!responseSubjects.containsKey(response.getID())) {
 				logger.warn("No one waiting for response {}: {}", response.getID(), response.toJSONString());
 			} else {
-				BehaviorSubject<JSONRPC2Response> responseSubject = responseSubjects.remove(response.getID());
+				AsyncSubject<JSONRPC2Response> responseSubject = responseSubjects.remove(response.getID());
 				responseSubject.onNext(response);
 				responseSubject.onComplete();
 			}
@@ -429,7 +430,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 		} catch (JSONRPC2ParseException e) {
 			if (logger.isDebugEnabled()) logger.debug("Actor {} Error processing response message {}: {}", actorId, json, ExceptionUtils.getMessage(e));
 		} catch (Throwable e) {
-			logger.warn("Actor {} {} Error processing response message {}: {}", actorId, wsrpcServerUri, json, ExceptionUtils.getMessage(e));
+			logger.warn("Actor {} {} Error processing response message {}: {}", actorId, wsrpcServerUri, json, ExceptionUtils.getMessage(e), e);
 		}
 
 		// process the message
@@ -468,11 +469,11 @@ public abstract class ${specname}Actor implements AutoCloseable {
 			return  Single.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Not connected"), 0));
 		}
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end LastRequestId.incrementAndGet());
-		BehaviorSubject<JSONRPC2Response> responseSubject = BehaviorSubject.create();
+		AsyncSubject<JSONRPC2Response> responseSubject = AsyncSubject.create();
 		responseSubjects.put(request.getRequestId(), responseSubject);
 		if (logger.isDebugEnabled()) logger.debug("Send request: {}", request.toJSONString());
 		wsSession.getBasicRemote().sendText(request.toJSONString());
-		return responseSubject.singleOrError().timeout(timeout, TimeUnit.MILLISECONDS);
+		return responseSubject.timeout(timeout, TimeUnit.MILLISECONDS, Observable.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Timeout"), request.getRequestId()))).singleOrError();
 	}
 	
 #end
@@ -490,7 +491,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	public $request.returns ${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		JSONRPC2Response response = async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end timeout)
 				.onErrorReturn((e) -> { 
-					if (logger.isDebugEnabled()) logger.debug("${display.uncapitalize($request.name)}: {}", ExceptionUtils.getMessage(e)); 
+					if (logger.isDebugEnabled()) logger.debug("${display.uncapitalize($request.name)}: {}", ExceptionUtils.getMessage(e), e); 
 					return new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" " + ExceptionUtils.getMessage(e)), 0); 
 				})
 				.blockingGet();

@@ -25,7 +25,7 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.AsyncSubject;
 import io.reactivex.Single;
 
 /**
@@ -40,7 +40,7 @@ public abstract class ${specname}Agent {
 	
 	protected Session wsSession;
 	protected DecodedJWT jwtAuthentication;
-	protected final Map<Long, BehaviorSubject<JSONRPC2Response>> responseSubjects = new HashMap<>();
+	protected final Map<Long, AsyncSubject<JSONRPC2Response>> responseSubjects = new HashMap<>();
 	protected AtomicLong lastRequestId = new AtomicLong();
 	private final CompositeDisposable compositeDisposable = new CompositeDisposable();
 	
@@ -73,7 +73,7 @@ public abstract class ${specname}Agent {
 		if (!responseSubjects.containsKey(response.getID())) {
 			logger.warn("No one waiting for response {}: {}", response.getID(), response.toJSONString());
 		} else {
-			BehaviorSubject<JSONRPC2Response> responseSubject = responseSubjects.remove(response.getID());
+			AsyncSubject<JSONRPC2Response> responseSubject = responseSubjects.remove(response.getID());
 			responseSubject.onNext(response);
 			responseSubject.onComplete();
 		}
@@ -158,10 +158,10 @@ public abstract class ${specname}Agent {
 	/**
 	 * Send a response
 	 * @param requestId the original request id
-	 */
 	public void sendResponse(long requestId) throws IOException {
 		wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JSONRPC2Response(requestId).toJSONString()));
 	}
+	 */
 
 	/**
 	 * Send a response
@@ -353,10 +353,10 @@ public abstract class ${specname}Agent {
 	 */
 	public Single<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end lastRequestId.incrementAndGet());
-		BehaviorSubject<JSONRPC2Response> responseSubject = BehaviorSubject.create();
+		AsyncSubject<JSONRPC2Response> responseSubject = AsyncSubject.create();
 		responseSubjects.put(request.getRequestId(), responseSubject);
 		wsSession.getBasicRemote().sendBinary(stringByteBuffer(request.toJSONString()));
-		return responseSubject.singleOrError().timeout(timeout, TimeUnit.MILLISECONDS);
+		return responseSubject.singleOrError().timeout(timeout, TimeUnit.MILLISECONDS, Single.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Timeout"), request.getRequestId())));
 	}
 	
 #end
@@ -374,7 +374,7 @@ public abstract class ${specname}Agent {
 	public $request.returns ${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		JSONRPC2Response response = async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end timeout)
 				.onErrorReturn((e) -> { 
-					if (logger.isDebugEnabled()) logger.debug("${display.uncapitalize($request.name)}: {}", ExceptionUtils.getMessage(e)); 
+					if (logger.isDebugEnabled()) logger.debug("${display.uncapitalize($request.name)}: {}", ExceptionUtils.getMessage(e), e); 
 					return new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" " + ExceptionUtils.getMessage(e)), 0); 
 				})
 				.blockingGet();
