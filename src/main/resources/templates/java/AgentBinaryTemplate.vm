@@ -42,7 +42,7 @@ public abstract class ${specname}Agent {
 	protected DecodedJWT jwtAuthentication;
 	protected final Map<Long, AsyncSubject<JSONRPC2Response>> responseSubjects = new HashMap<>();
 	protected AtomicLong lastRequestId = new AtomicLong();
-	private final CompositeDisposable compositeDisposable = new CompositeDisposable();
+	private CompositeDisposable compositeDisposable = new CompositeDisposable();
 	
 	/**
 	 * @return the next request id
@@ -249,6 +249,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void close() {
 		compositeDisposable.dispose();
+		compositeDisposable = new CompositeDisposable();
 	}
 
 #foreach ($notice in $serverNotices)
