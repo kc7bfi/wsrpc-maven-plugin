@@ -71,7 +71,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	private static ExecutorService threadPool = Executors.newCachedThreadPool(new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-%d").build());
 #end
 	private static ScheduledExecutorService schedulePool = Executors.newScheduledThreadPool(1, new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-sched-%d").build());
-	private final CompositeDisposable compositeDisposable = new CompositeDisposable();
+	private CompositeDisposable compositeDisposable = new CompositeDisposable();
 	private final Semaphore authenticationSemophore = new Semaphore(0);
 
 	protected final Map<Long, AsyncSubject<JSONRPC2Response>> responseSubjects = new HashMap<>();
@@ -235,6 +235,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 		// close the session
 		try {
 			compositeDisposable.dispose();
+			compositeDisposable = new CompositeDisposable();
 			if (connectFuture != null && !connectFuture.isDone() && !connectFuture.isCancelled()) connectFuture.cancel(true);
 			if (wsSession != null) wsSession.close(closeReason);
 		} catch (IOException e) {
@@ -282,7 +283,6 @@ public abstract class ${specname}Actor implements AutoCloseable {
 			AsyncSubject<JSONRPC2Response> responseSubject = AsyncSubject.create();
 			responseSubjects.put((Long)request.getID(), responseSubject);
 			if (logger.isDebugEnabled()) logger.debug("Send request: {}", request.toJSONString());
-			wsSession.getBasicRemote().sendText(request.toJSONString());
 			addDisposable(responseSubject.timeout(10, TimeUnit.SECONDS, Observable.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Timeout"), request.getID()))).singleOrError().subscribe(
 					authResponse -> {
 						if (logger.isDebugEnabled()) logger.debug("Authentication response: {}", authResponse.toJSONString());
@@ -297,6 +297,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 						schedulePool.schedule(() -> close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error")), 500, TimeUnit.MILLISECONDS);
 					}
 					));
+			wsSession.getBasicRemote().sendText(request.toJSONString());
 		} catch (IOException e) {
 			logger.warn("Actor {} {} Error sending authenticate request: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
 			authenticated.setValue(false);
@@ -314,11 +315,11 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	public void onClose(CloseReason closeReason, Session wsSession) {
 		logger.info("Actor {} closed connection to {} due to {} {}", actorId, wsrpcServerUri, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 		compositFutures.cancelRemaining(true);
-		if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) {
 #if ($synchronized == "server" || $synchronized == "both")
+		if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) {
 			threadPool.shutdown();
-#end
 		}
+#end
 		this.wsSession = null;
 		authenticated.setValue(false);
 		authenticationSemophore.release();
@@ -471,9 +472,10 @@ public abstract class ${specname}Actor implements AutoCloseable {
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end LastRequestId.incrementAndGet());
 		AsyncSubject<JSONRPC2Response> responseSubject = AsyncSubject.create();
 		responseSubjects.put(request.getRequestId(), responseSubject);
+		Single<JSONRPC2Response> single = responseSubject.timeout(timeout, TimeUnit.MILLISECONDS, Observable.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Timeout"), request.getRequestId()))).singleOrError();
 		if (logger.isDebugEnabled()) logger.debug("Send request: {}", request.toJSONString());
 		wsSession.getBasicRemote().sendText(request.toJSONString());
-		return responseSubject.timeout(timeout, TimeUnit.MILLISECONDS, Observable.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Timeout"), request.getRequestId()))).singleOrError();
+		return single;
 	}
 	
 #end
