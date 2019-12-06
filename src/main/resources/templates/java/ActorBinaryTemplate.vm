@@ -190,8 +190,9 @@ public abstract class ${specname}Actor implements AutoCloseable {
 						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
 						authenticated.setValue(false);
 						authenticationSemophore.release();
-						counter++;
+						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.CANNOT_ACCEPT)) return false;
 						if (logger.isDebugEnabled()) logger.debug("Actor {} reconnecting to {} attempt {} because closed: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+						counter++;
 						return true;
 					}
 
@@ -283,9 +284,19 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @param wsSession the session
 	 */
 	@OnOpen
-	public void onOpen(Session wsSession) {
+	public synchronized void onOpen(Session wsSession) {
 		if (logger.isDebugEnabled()) logger.debug("Actor {} opened to {} with session id {}", actorId, wsrpcServerUri, wsSession.getId());
+
+		if (this.wsSession != null && this.wsSession.isOpen()) {
+			if (logger.isDebugEnabled()) logger.debug("Actor {} closing previously opened session {}", actorId, this.wsSession.getId());
+			try {
+				this.wsSession.close(new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT, "Previous session found"));
+			} catch (Exception e) {
+				logger.warn("Actor {} error closing previously opened session {}: {}", actorId, this.wsSession.getId(), ExceptionUtils.getMessage(e));
+			}
+		}
 		this.wsSession = wsSession;
+
 #if ($maxBinaryMessageSize != "0")
 		this.wsSession.setMaxBinaryMessageBufferSize($maxBinaryMessageSize);
 #end
@@ -294,7 +305,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 		try {
 			if (userJwtToken == null) {
 				logger.info("Actor {} No JWT authentication code available", actorId);
-				schedulePool.schedule(() -> close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Not Authenticated")), 500, TimeUnit.MILLISECONDS);
+				close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Not Authenticated"));
 				return;
 			}
 			Map<String, Object> params = new HashMap<>();
