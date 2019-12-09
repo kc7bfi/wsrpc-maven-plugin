@@ -79,6 +79,8 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	protected Future<Session> connectFuture;
 	protected final MutableBoolean authenticated = new MutableBoolean(false);
 	protected final BlockingQueue<ByteBuffer> binaryDataQueue = new LinkedBlockingQueue<>();
+	protected final Object connectMutex = new Object();
+	protected final Object onOpenMutex = new Object();
 	
 	/**
 	 * Override this function allowing WSRPC to get the correct JWT.
@@ -155,7 +157,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @param connectTimeout the timeout to wait for connection
 	 * @return true if connection and authentication were successful
 	 */
-	public synchronized boolean connect(int connectTimeout) {
+	public boolean connect(int connectTimeout) {
 		return connect(null, connectTimeout);
 	}
 	
@@ -165,58 +167,63 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @param connectTimeout the timeout to wait for connection
 	 * @return true if connection and authentication were successful
 	 */
-	public synchronized boolean connect(Map<String, Object> clientProperties, int connectTimeout) {
-		if (client != null) return true;
-		authenticated.setValue(false);
-		authenticationSemophore.drainPermits();
+	public boolean connect(Map<String, Object> clientProperties, int connectTimeout) {
+		synchronized (connectMutex) {
+			if (client != null) return true;
+			authenticated.setValue(false);
+			authenticationSemophore.drainPermits();
 		
-		try {
-			if (logger.isDebugEnabled()) logger.debug("Actor {} connecting to {}", actorId, wsrpcServerUri);
-			client = ClientManager.createClient();
-			client.getProperties().put(ClientProperties.SHARED_CONTAINER, true);
-			client.getProperties().put(ClientProperties.SHARED_CONTAINER_IDLE_TIMEOUT, 5);
-			if (clientProperties != null) client.getProperties().putAll(clientProperties);
-			if (sslEngineConfigurator != null) client.getProperties().put(ClientProperties.SSL_ENGINE_CONFIGURATOR, sslEngineConfigurator);
+			try {
+				if (logger.isDebugEnabled()) logger.debug("Actor {} connecting to {}", actorId, wsrpcServerUri);
+				client = ClientManager.createClient();
+				client.getProperties().put(ClientProperties.SHARED_CONTAINER, true);
+				client.getProperties().put(ClientProperties.SHARED_CONTAINER_IDLE_TIMEOUT, 5);
+				if (clientProperties != null) client.getProperties().putAll(clientProperties);
+				if (sslEngineConfigurator != null) client.getProperties().put(ClientProperties.SSL_ENGINE_CONFIGURATOR, sslEngineConfigurator);
 
-			if (this.reconnectHandler != null) 
-				client.getProperties().put(ClientProperties.RECONNECT_HANDLER, reconnectHandler);
-			else 
-				client.getProperties().put(ClientProperties.RECONNECT_HANDLER, new ClientManager.ReconnectHandler() {
+				if (this.reconnectHandler != null) 
+					client.getProperties().put(ClientProperties.RECONNECT_HANDLER, reconnectHandler);
+				else 
+					client.getProperties().put(ClientProperties.RECONNECT_HANDLER, new ClientManager.ReconnectHandler() {
 
-					private int counter;
+						private int counter;
 
-					@Override
-					public boolean onDisconnect(CloseReason closeReason) {
-						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
-						authenticated.setValue(false);
-						authenticationSemophore.release();
-						if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.CANNOT_ACCEPT)) return false;
-						if (logger.isDebugEnabled()) logger.debug("Actor {} reconnecting to {} attempt {} because closed: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
-						counter++;
-						return true;
-					}
+						@Override
+						public boolean onDisconnect(CloseReason closeReason) {
+							if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
+							authenticated.setValue(false);
+							authenticationSemophore.release();
+							if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.CANNOT_ACCEPT)) return false;
+							if (logger.isDebugEnabled()) logger.debug("Actor {} reconnecting to {} attempt {} because closed: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+							counter++;
+							return true;
+						}
 
-					@Override
-					public boolean onConnectFailure(Exception exception) {
-						counter++;
-						if (logger.isDebugEnabled()) logger.debug("Actor {} reconnecting to {} attempt {} because connect failed: {}: {}", actorId, wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
-						return true;
-					}
+						@Override
+						public boolean onConnectFailure(Exception exception) {
+							counter++;
+							if (logger.isDebugEnabled()) logger.debug("Actor {} reconnecting to {} attempt {} because connect failed: {}: {}", actorId, wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
+							return true;
+						}
 					
-					@Override
-					public long getDelay() {
-						return 2;
-					}
-				});
+						@Override
+						public long getDelay() {
+							return 4;
+						}
+					});
 				
-			connectFuture = client.asyncConnectToServer(this, wsrpcServerUri);
+				connectFuture = client.asyncConnectToServer(this, wsrpcServerUri);
 
-			// wait for authentication
-			if (!authenticationSemophore.tryAcquire(connectTimeout, TimeUnit.MILLISECONDS)) logger.warn("Actor {} {} Timed out waiting for authentication", actorId, wsrpcServerUri);
-			return authenticated.booleanValue();
-		} catch (Throwable e) {
-			logger.warn("Actor {} {} Error connecting to server: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e), e);
-			return false;
+				// wait for authentication
+				if (!authenticationSemophore.tryAcquire(connectTimeout, TimeUnit.MILLISECONDS)) {
+					logger.warn("Actor {} {} Timed out waiting for authentication", actorId, wsrpcServerUri);
+					connectFuture.cancel(true);
+				}
+				return authenticated.booleanValue();
+			} catch (Throwable e) {
+				logger.warn("Actor {} {} Error connecting to server: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e), e);
+				return false;
+			}
 		}
 	}
 
@@ -284,37 +291,38 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @param wsSession the session
 	 */
 	@OnOpen
-	public synchronized void onOpen(Session wsSession) {
-		if (logger.isDebugEnabled()) logger.debug("Actor {} opened to {} with session id {}", actorId, wsrpcServerUri, wsSession.getId());
+	public void onOpen(Session wsSession) {
+		synchronized (onOpenMutex) {
+			if (logger.isDebugEnabled()) logger.debug("Actor {} opened to {} with session id {}", actorId, wsrpcServerUri, wsSession.getId());
 
-		if (this.wsSession != null && this.wsSession.isOpen()) {
-			if (logger.isDebugEnabled()) logger.debug("Actor {} closing previously opened session {}", actorId, this.wsSession.getId());
-			try {
-				this.wsSession.close(new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT, "Previous session found"));
-			} catch (Exception e) {
-				logger.warn("Actor {} error closing previously opened session {}: {}", actorId, this.wsSession.getId(), ExceptionUtils.getMessage(e));
+			if (this.wsSession != null && this.wsSession.isOpen()) {
+				if (logger.isDebugEnabled()) logger.debug("Actor {} closing previously opened session {}", actorId, this.wsSession.getId());
+				try {
+					this.wsSession.close(new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT, "Previous session found"));
+				} catch (Exception e) {
+					logger.warn("Actor {} error closing previously opened session {}: {}", actorId, this.wsSession.getId(), ExceptionUtils.getMessage(e));
+				}
 			}
-		}
-		this.wsSession = wsSession;
+			this.wsSession = wsSession;
 
 #if ($maxBinaryMessageSize != "0")
-		this.wsSession.setMaxBinaryMessageBufferSize($maxBinaryMessageSize);
+			this.wsSession.setMaxBinaryMessageBufferSize($maxBinaryMessageSize);
 #end
-		String userJwtToken = getJWTAuthenticationToken();
+			String userJwtToken = getJWTAuthenticationToken();
 
-		try {
-			if (userJwtToken == null) {
-				logger.info("Actor {} No JWT authentication code available", actorId);
-				close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Not Authenticated"));
-				return;
-			}
-			Map<String, Object> params = new HashMap<>();
-			params.put("token", userJwtToken);
-			JSONRPC2Request request = new JSONRPC2Request("Authenticate", params, LastRequestId.incrementAndGet());
-			if (logger.isDebugEnabled()) logger.debug("Send authentication: {}", request.toJSONString());
-			AsyncSubject<JSONRPC2Response> responseSubject = AsyncSubject.create();
-			responseSubjects.put((Long)request.getID(), responseSubject);
-			addDisposable(responseSubject.singleOrError().timeout(10, TimeUnit.SECONDS, Single.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Timeout"), request.getID()))).subscribe(
+			try {
+				if (userJwtToken == null) {
+					logger.info("Actor {} No JWT authentication code available", actorId);
+					close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Not Authenticated"));
+					return;
+				}
+				Map<String, Object> params = new HashMap<>();
+				params.put("token", userJwtToken);
+				JSONRPC2Request request = new JSONRPC2Request("Authenticate", params, LastRequestId.incrementAndGet());
+				if (logger.isDebugEnabled()) logger.debug("Send authentication: {}", request.toJSONString());
+				AsyncSubject<JSONRPC2Response> responseSubject = AsyncSubject.create();
+				responseSubjects.put((Long)request.getID(), responseSubject);
+				addDisposable(responseSubject.singleOrError().timeout(10, TimeUnit.SECONDS, Single.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Timeout"), request.getID()))).subscribe(
 					authResponse -> {
 						if (logger.isDebugEnabled()) logger.debug("Authentication response: {}", authResponse.toJSONString());
 						authenticated.setValue(!authResponse.indicatesSuccess() ? false : (boolean)authResponse.getResult());
@@ -328,12 +336,13 @@ public abstract class ${specname}Actor implements AutoCloseable {
 						schedulePool.schedule(() -> close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error")), 500, TimeUnit.MILLISECONDS);
 					}
 					));
-			wsSession.getBasicRemote().sendBinary(stringByteBuffer(request.toJSONString()));
-		} catch (IOException e) {
-			logger.warn("Actor {} {} Error sending authenticate request: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
-			authenticated.setValue(false);
-			authenticationSemophore.release();
-			close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error"));
+				wsSession.getBasicRemote().sendBinary(stringByteBuffer(request.toJSONString()));
+			} catch (IOException e) {
+				logger.warn("Actor {} {} Error sending authenticate request: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
+				authenticated.setValue(false);
+				authenticationSemophore.release();
+				close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error"));
+			}
 		}
 	}
 
