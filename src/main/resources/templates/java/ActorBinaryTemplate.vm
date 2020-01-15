@@ -220,6 +220,9 @@ public abstract class ${specname}Actor implements AutoCloseable {
 					connectFuture.cancel(true);
 				}
 				return authenticated.booleanValue();
+			} catch (InterruptedException e) {
+				logger.debug("Actor {} {} Error connecting to server: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
+				return false;
 			} catch (Throwable e) {
 				logger.warn("Actor {} {} Error connecting to server: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e), e);
 				return false;
