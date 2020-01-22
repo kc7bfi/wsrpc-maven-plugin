@@ -308,6 +308,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 						authenticated.setValue(!authResponse.indicatesSuccess() ? false : (boolean)authResponse.getResult());
 						if (!authenticated.getValue()) logger.warn("Authentication failed: {}", authResponse.toJSONString());
 						authenticationSemophore.release();
+						if (!authResponse.indicatesSuccess()) schedulePool.schedule(() -> close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Authentication Error")), 500, TimeUnit.MILLISECONDS);
 					},
 					authError -> {
 						logger.warn("Actor {} {} Error authenticating with JWT {}: {}", actorId, wsrpcServerUri, userJwtToken, ExceptionUtils.getMessage(authError));
