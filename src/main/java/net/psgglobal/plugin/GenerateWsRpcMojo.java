@@ -111,6 +111,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 			if ("java".equalsIgnoreCase(targetLang)) {
 				javaGenerateConstsFiles(specName, specPackage, specification);
+				javaGenerateEnumFiles(specName, specPackage, specification);
 				javaGenerateClassFiles(specName, specPackage, specification);
 				javaGenerateListFiles(specName, specPackage, specification);
 				javaGenerateNoticeFiles(specName, specPackage, specification);
@@ -195,10 +196,9 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	@SuppressWarnings("unchecked")
 	private void javaGenerateClassFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> claszs = (List<Map<String, Object>>) specification.get("classes");
-		if (claszs != null) {
-			for (Map<String, Object> clasz : claszs) {
-				javaGenerateClassFile(specName, specPackage, clasz);
-			}
+		if (claszs == null) return;
+		for (Map<String, Object> clasz : claszs) {
+			javaGenerateClassFile(specName, specPackage, clasz);
 		}
 	}
 
@@ -267,11 +267,10 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	 */
 	@SuppressWarnings("unchecked")
 	private void javaGenerateConstsFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
-		List<Map<String, Object>> claszs = (List<Map<String, Object>>) specification.get("consts");
-		if (claszs != null) {
-			for (Map<String, Object> clasz : claszs) {
-				javaGenerateConstsFile(specName, specPackage, clasz);
-			}
+		List<Map<String, Object>> consts = (List<Map<String, Object>>) specification.get("consts");
+		if (consts == null) return;
+		for (Map<String, Object> constt : consts) {
+			javaGenerateConstsFile(specName, specPackage, constt);
 		}
 	}
 
@@ -332,6 +331,78 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	}
 
 	/**
+	 * Generate all the constants files
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param specification the specification
+	 * @throws MojoExecutionException Errors
+	 */
+	@SuppressWarnings("unchecked")
+	private void javaGenerateEnumFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
+		List<Map<String, Object>> enums = (List<Map<String, Object>>) specification.get("enums");
+		if (enums == null) return;
+		for (Map<String, Object> enumm : enums) {
+			javaGenerateEnumFile(specName, specPackage, enumm);
+		}
+	}
+
+	/**
+	 * Generate a single constants file
+	 * @param specName the specification name
+	 * @param specPackage the specification package
+	 * @param enumSpecification the constant specification
+	 * @throws MojoExecutionException errors
+	 */
+	@SuppressWarnings("unchecked")
+	private void javaGenerateEnumFile(String specName, String specPackage, Map<String, Object> enumSpecification) throws MojoExecutionException {
+
+		// initialize the Velocity engine
+		VelocityEngine velocityEngine = new VelocityEngine();
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
+		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.init();
+		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/EnumTemplate.vm");
+
+		// use standard tools
+		Map<String, Object> toolProperties = new HashMap<String, Object>();
+		toolProperties.put("engine", velocityEngine);
+		ToolManager toolManager = new ToolManager(true, true);
+
+		// set up the Velocity context model
+		ToolContext velocityContext = toolManager.createContext();
+		velocityContext.put("packageName", specPackage);
+		velocityContext.put("enumName", enumSpecification.get("name"));
+		velocityContext.put("enumJavadoc", enumSpecification.get("javadoc"));
+		velocityContext.put("members", getParametersMap((List<Map<String, Object>>) enumSpecification.get("members")));
+
+		// generate the code
+		StringWriter codeWriter = new StringWriter();
+		vilocityTemplate.merge(velocityContext, codeWriter);
+
+		// save the code
+		String dirPath = createPackageDirs(specName, specPackage);
+		String sourceCodePath = dirPath + capitalize((String) enumSpecification.get("name")) + ".java";
+		File claszCodeFile = new File(sourceCodePath);
+		try {
+			claszCodeFile.createNewFile();
+		} catch (IOException e) {
+			getLog().warn("Cannot create source code file " + sourceCodePath);
+			throw new MojoExecutionException("Cannot create source code file");
+		}
+		FileWriter writer = null;
+		try {
+			writer = new FileWriter(claszCodeFile);
+			writer.write(codeWriter.toString());
+			getLog().info("Wrote " + sourceCodePath);
+		} catch (IOException e) {
+			getLog().warn("Cannot write source code file " + sourceCodePath + ": " + e.getMessage());
+			throw new MojoExecutionException("Cannot write source code file");
+		} finally {
+			if (writer != null) try { writer.close(); } catch (Exception e) { getLog().warn("Could not close writer: " + e.getMessage()); }
+		}
+	}
+
+	/**
 	 * Generate all the list files
 	 * @param specName the specification name
 	 * @param specPackage the specification package
@@ -341,10 +412,9 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	@SuppressWarnings("unchecked")
 	private void javaGenerateListFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> lists = (List<Map<String, Object>>) specification.get("lists");
-		if (lists != null) {
-			for (Map<String, Object> list : lists) {
-				javaGenerateListFile(specName, specPackage, list);
-			}
+		if (lists == null) return;
+		for (Map<String, Object> list : lists) {
+			javaGenerateListFile(specName, specPackage, list);
 		}
 	}
 
@@ -414,10 +484,9 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	@SuppressWarnings("unchecked")
 	private void javaGenerateNoticeFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> notices = (List<Map<String, Object>>) specification.get("notices");
-		if (notices != null) {
-			for (Map<String, Object> notice : notices) {
-				javaGenerateNoticeFile(specName, specPackage, notice);
-			}
+		if (notices == null) return;
+		for (Map<String, Object> notice : notices) {
+			javaGenerateNoticeFile(specName, specPackage, notice);
 		}
 	}
 
@@ -487,6 +556,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 	@SuppressWarnings("unchecked")
 	private void javaGenerateRequestFiles(String specName, String specPackage, Map<String, Object> specification) throws MojoExecutionException {
 		List<Map<String, Object>> requests = (List<Map<String, Object>>) specification.get("requests");
+		if (requests == null) return;
 		for (Map<String, Object> request : requests) {
 			javaGenerateRequestFile(specName, specPackage, request);
 		}
