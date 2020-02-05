@@ -571,6 +571,22 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	
 #end
 
+#foreach ($notice in $clientNotices)
+	/**
+	 * Send a $noteice.name notice
+#foreach ($parameter in $parameters)
+#if ($parameter.javadoc)
+	 * @param $parameter.name $parameter.javadoc
+#end
+#end
+	 */
+	public void send${display.capitalize($notice.name)}(#foreach ($parameter in $notice.parameters)$parameter.type $parameter.name#if($foreach.hasNext), #end#end) throws IOException {
+		${display.capitalize($notice.name)}Notice notice = new ${display.capitalize($notice.name)}Notice(#foreach ($parameter in $notice.parameters)$parameter.name, #end LastRequestId.incrementAndGet());
+		wsSession.getBasicRemote().sendText(notice.toJSONString());
+	}
+	
+#end
+
 	/**
 	 * @return the next request id
 	 */
