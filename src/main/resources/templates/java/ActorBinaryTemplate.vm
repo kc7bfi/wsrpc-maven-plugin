@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -72,6 +73,8 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	private static ScheduledExecutorService schedulePool = Executors.newScheduledThreadPool(1, new BasicThreadFactory.Builder().daemon(true).namingPattern("wsrpc-${specname}-sched-%d").build());
 	private CompositeDisposable compositeDisposable = new CompositeDisposable();
 	private final Semaphore authenticationSemophore = new Semaphore(0);
+	private int connectTimeout;
+	private ScheduledFuture<?> checkAmReadyFuture;
 
 	protected final Map<Long, AsyncSubject<JSONRPC2Response>> responseSubjects = new HashMap<>();
 	protected SslEngineConfigurator sslEngineConfigurator;
@@ -168,8 +171,10 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @return true if connection and authentication were successful
 	 */
 	public boolean connect(Map<String, Object> clientProperties, int connectTimeout) {
+		this.connectTimeout = connectTimeout;
 		synchronized (connectMutex) {
 			if (client != null) return true;
+			if (checkAmReadyFuture == null) checkAmReadyFuture = schedulePool.scheduleAtFixedRate(() -> checkAmReady(), connectTimeout + 5000, connectTimeout + 5000, TimeUnit.MILLISECONDS);
 			authenticated.setValue(false);
 			authenticationSemophore.drainPermits();
 		
@@ -186,29 +191,26 @@ public abstract class ${specname}Actor implements AutoCloseable {
 				else 
 					client.getProperties().put(ClientProperties.RECONNECT_HANDLER, new ClientManager.ReconnectHandler() {
 
-						private int counter;
-
 						@Override
 						public boolean onDisconnect(CloseReason closeReason) {
-							if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) return false;
+							if (logger.isDebugEnabled()) logger.debug("Actor {} connect {} disconnected because {} {}", actorId, wsrpcServerUri, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+							if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) {
+								if (checkAmReadyFuture != null) checkAmReadyFuture.cancel(false);
+								checkAmReadyFuture = null;
+							}
 							authenticated.setValue(false);
 							authenticationSemophore.release();
-							if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.CANNOT_ACCEPT)) return false;
-							if (logger.isDebugEnabled()) logger.debug("Actor {} reconnecting to {} attempt {} because closed: {} {}", actorId, wsrpcServerUri, counter, closeReason.getCloseCode(), closeReason.getReasonPhrase());
-							counter++;
-							return true;
+							if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.CANNOT_ACCEPT)) {
+								if (checkAmReadyFuture != null) checkAmReadyFuture.cancel(false);
+								checkAmReadyFuture = null;
+							}
+							return false;
 						}
 
 						@Override
 						public boolean onConnectFailure(Exception exception) {
-							counter++;
-							if (logger.isDebugEnabled()) logger.debug("Actor {} reconnecting to {} attempt {} because connect failed: {}: {}", actorId, wsrpcServerUri, counter, ExceptionUtils.getMessage(exception), ExceptionUtils.getRootCauseMessage(exception));
-							return true;
-						}
-					
-						@Override
-						public long getDelay() {
-							return 4;
+							if (logger.isDebugEnabled()) logger.debug("Actor {} connect {} connect failed: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(exception));
+							return false;
 						}
 					});
 				
@@ -216,7 +218,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 
 				// wait for authentication
 				if (!authenticationSemophore.tryAcquire(connectTimeout, TimeUnit.MILLISECONDS)) {
-					logger.warn("Actor {} {} Timed out waiting for authentication", actorId, wsrpcServerUri);
+					logger.debug("Actor {} {} Timed out waiting for authentication", actorId, wsrpcServerUri);
 					connectFuture.cancel(true);
 				}
 				return authenticated.booleanValue();
@@ -227,6 +229,22 @@ public abstract class ${specname}Actor implements AutoCloseable {
 				logger.warn("Actor {} {} Error connecting to server: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e), e);
 				return false;
 			}
+		}
+	}
+
+	/**
+	 * periodically check if we are ready. If not, reset the connection
+	 */
+	private void checkAmReady() {
+		synchronized (connectMutex) {
+			logger.debug("Actor {} {} amReady {}", actorId, wsrpcServerUri, isReady());
+			if (isReady()) return;
+
+			// close the session
+			close(new CloseReason(CloseReason.CloseCodes.UNEXPECTED_CONDITION, "Found closed"));
+
+			// try to reconnect
+			connect(connectTimeout);
 		}
 	}
 
@@ -253,11 +271,9 @@ public abstract class ${specname}Actor implements AutoCloseable {
 		}
 		wsSession = null;
 		
-		// on normal close, shutdown client
-		if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) {
-			if (client != null) client.shutdown();
-			client = null;
-		}
+		// shutdown client
+		if (client != null) client.shutdown();
+		client = null;
 	}
 	
 	/**
