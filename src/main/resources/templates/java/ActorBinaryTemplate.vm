@@ -373,16 +373,18 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 */
 	@OnClose
 	public void onClose(CloseReason closeReason, Session wsSession) {
-		logger.info("Actor {} closed connection to {} due to {} {}", actorId, wsrpcServerUri, closeReason.getCloseCode(), closeReason.getReasonPhrase());
-		compositFutures.cancelRemaining(true);
+		synchronized (onOpenMutex) {
+			logger.info("Actor {} closed connection to {} due to {} {}", actorId, wsrpcServerUri, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+			compositFutures.cancelRemaining(true);
 #if ($synchronized == "server" || $synchronized == "both")
-		if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) {
-			threadPool.shutdown();
-		}
+			if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) {
+				threadPool.shutdown();
+			}
 #end
-		this.wsSession = null;
-		authenticated.setValue(false);
-		authenticationSemophore.release();
+			this.wsSession = null;
+			authenticated.setValue(false);
+			authenticationSemophore.release();
+		}
 	}
 
 	/**
