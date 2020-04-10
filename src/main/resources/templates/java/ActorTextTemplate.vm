@@ -195,16 +195,8 @@ public abstract class ${specname}Actor implements AutoCloseable {
 						@Override
 						public boolean onDisconnect(CloseReason closeReason) {
 							if (logger.isDebugEnabled()) logger.debug("Actor {} connect {} disconnected because {} {}", actorId, wsrpcServerUri, closeReason.getCloseCode(), closeReason.getReasonPhrase());
-							if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) {
-								if (checkAmReadyFuture != null) checkAmReadyFuture.cancel(false);
-								checkAmReadyFuture = null;
-							}
 							authenticated.setValue(false);
 							authenticationSemophore.release();
-							if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.CANNOT_ACCEPT)) {
-								if (checkAmReadyFuture != null) checkAmReadyFuture.cancel(false);
-								checkAmReadyFuture = null;
-							}
 							return false;
 						}
 
@@ -238,7 +230,6 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 */
 	private void checkAmReady() {
 		synchronized (connectMutex) {
-			logger.debug("Actor {} {} amReady {}", actorId, wsrpcServerUri, isReady());
 			if (isReady()) return;
 
 			// close the session
@@ -261,6 +252,13 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @param closeReason the reason for the close
 	 */
 	public void close(CloseReason closeReason) {
+		logger.info("Close Actor {} reason {} {} ", actorId, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+		if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) {
+			logger.warn("Stopping reconnect future {}",checkAmReadyFuture);
+			if (checkAmReadyFuture != null) checkAmReadyFuture.cancel(false);
+			checkAmReadyFuture = null;
+		}
+
 		// close the session
 		try {
 			compositeDisposable.dispose();
@@ -295,7 +293,8 @@ public abstract class ${specname}Actor implements AutoCloseable {
 			if (logger.isDebugEnabled()) logger.debug("Actor {} opened to {} with session id {}", actorId, wsrpcServerUri, wsSession.getId());
 
 			if (this.wsSession != null && this.wsSession.isOpen()) {
-				if (logger.isDebugEnabled()) logger.debug("Actor {} closing previously opened session {}", actorId, this.wsSession.getId());
+				if (this.wsSession.getId().equals(wsSession.getId())) return;
+				logger.warn("Actor {} closing previously opened session {} new session {}", actorId, this.wsSession.getId(), wsSession.getId());
 				try {
 					this.wsSession.close(new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT, "Previous session found"));
 				} catch (Exception e) {
@@ -355,6 +354,10 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	@OnClose
 	public void onClose(CloseReason closeReason, Session wsSession) {
 		synchronized (onOpenMutex) {
+			if (this.wsSession != null && !this.wsSession.getId().equals(wsSession.getId())) {
+				logger.warn("Actor {} closing a previously opened session {}", actorId, wsSession.getId());
+				return;
+			}
 			logger.info("Actor {} closed connection to {} due to {} {}", actorId, wsrpcServerUri, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 			compositFutures.cancelRemaining(true);
 #if ($synchronized == "server" || $synchronized == "both")
@@ -391,7 +394,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @param error the error
 	 */
 	public void sendResponse(JSONRPC2Error error, Long requestId) throws IOException {
-		if (logger.isDebugEnabled()) logger.debug("Actor {} send error response: {} for request {}", actorId, error, requestId); 
+		if (logger.isTraceEnabled()) logger.trace("Actor {} send error response: {} for request {}", actorId, error, requestId); 
 		wsSession.getBasicRemote().sendText(new JSONRPC2Response(error, requestId).toJSONString());
 	}
 
@@ -400,7 +403,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @param response the response
 	 */
 	public void sendResponse(JSONRPC2Response response) throws IOException {
-		if (logger.isDebugEnabled()) logger.debug("Actor {} send response: {}", actorId, response.toJSONString());
+		if (logger.isTraceEnabled()) logger.trace("Actor {} send response: {}", actorId, response.toJSONString());
 		wsSession.getBasicRemote().sendText(response.toJSONString());
 	}
 
@@ -411,7 +414,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	public void sendSilentResponse(long requestId) {
 		try {
 			String jsonResponse = new JSONRPC2Response(requestId).toJSONString();
-			if (logger.isDebugEnabled()) logger.debug("Actor {} send response: {}", jsonResponse);
+			if (logger.isTraceEnabled()) logger.trace("Actor {} send response: {}", jsonResponse);
 			wsSession.getBasicRemote().sendText(jsonResponse);
 		} catch (Exception e) {
 			logger.warn("Actor {} {} Error sending response: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
@@ -426,7 +429,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	public void sendSilentResponse(Object result, long requestId) {
 		try {
 			String jsonResponse = new JSONRPC2Response(result, requestId).toJSONString();
-			if (logger.isDebugEnabled()) logger.debug("Actor {} send response: {}", jsonResponse);
+			if (logger.isTraceEnabled()) logger.trace("Actor {} send response: {}", jsonResponse);
 			wsSession.getBasicRemote().sendText(jsonResponse);
 		} catch (Exception e) {
 			logger.warn("Actor {} {} Error sending response: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(e));
@@ -458,7 +461,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	public void onMessage(String json, Session wsSession) {
 
 		// JSON message
-		if (logger.isDebugEnabled()) logger.debug("Actor {} OnMessage: {}", actorId, json);
+		if (logger.isTraceEnabled()) logger.trace("Actor {} OnMessage: {}", actorId, json);
 
 		// process results
 		try {
@@ -516,7 +519,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 		AsyncSubject<JSONRPC2Response> responseSubject = AsyncSubject.create();
 		responseSubjects.put(request.getRequestId(), responseSubject);
 		Single<JSONRPC2Response> single = responseSubject.timeout(timeout, TimeUnit.MILLISECONDS, Observable.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Timeout"), request.getRequestId()))).singleOrError();
-		if (logger.isDebugEnabled()) logger.debug("Actor {} send request: {}", actorId, request.toJSONString());
+		if (logger.isTraceEnabled()) logger.trace("Actor {} send request: {}", actorId, request.toJSONString());
 		wsSession.getBasicRemote().sendText(request.toJSONString());
 		return single;
 	}
