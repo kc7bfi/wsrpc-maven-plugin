@@ -2,10 +2,13 @@ package $packageName;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
 
+import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
 /**
@@ -54,7 +57,15 @@ public class $display.capitalize($requestName)Request {
 	 */
 	public static $display.capitalize($requestName)Request narrow(JSONRPC2Request request) {
 #foreach ($parameter in $parameters)
-#if ($parameter.type.indexOf(".") > 0)
+#if ($parameter.type == "List<String>")
+		$parameter.type $parameter.name = new LinkedList<String>();
+		JSONArray ${parameter.name}Array = (JSONArray)request.getNamedParams().get("$parameter.name");
+		for (int i = 0; i < ${parameter.name}Array.size(); i++) ${parameter.name}.add((String)${parameter.name}Array.get(i));
+#elseif ($parameter.type == "List<Integer>")
+		$parameter.type $parameter.name = new LinkedList<Integer>();
+		JSONArray ${parameter.name}Array = (JSONArray)request.getNamedParams().get("$parameter.name");
+		for (int i = 0; i < ${parameter.name}Array.size(); i++) ${parameter.name}.add((Integer)${parameter.name}Array.get(i));
+#elseif ($parameter.type.indexOf(".") > 0)
 		$parameter.type $parameter.name = ${parameter.type}.parse((JSONObject)request.getNamedParams().get("$parameter.name"));
 #elseif ($parameter.type == "int")
 		$parameter.type $parameter.name = ((Long)request.getNamedParams().get("$parameter.name")).intValue();
