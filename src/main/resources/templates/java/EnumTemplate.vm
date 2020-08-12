@@ -31,7 +31,6 @@ public enum $display.capitalize($enumName) {
     }
 
     public static $display.capitalize($enumName) fromString(String name) {
-    System.out.println("DRR "+name);
         for ($display.capitalize($enumName) e : ${display.capitalize($enumName)}.values()) {
             if (e.name.equalsIgnoreCase(name)) {
                 return e;
