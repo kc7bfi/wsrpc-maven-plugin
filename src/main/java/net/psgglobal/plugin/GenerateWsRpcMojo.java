@@ -7,9 +7,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -63,6 +65,8 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 	@Parameter(defaultValue = "java")
 	private String targetLang;
+
+	private Set<String> enumTypes = new HashSet<String>();
 
 	/**
 	 * Execute the plugin
@@ -374,6 +378,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		velocityContext.put("enumName", enumSpecification.get("name"));
 		velocityContext.put("enumJavadoc", enumSpecification.get("javadoc"));
 		velocityContext.put("members", getParametersMap((List<Map<String, Object>>) enumSpecification.get("members")));
+		enumTypes.add(specPackage + "." + enumSpecification.get("name"));
 
 		// generate the code
 		StringWriter codeWriter = new StringWriter();
@@ -821,6 +826,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 				parameter.put("type", (String) paramaterSpec.get("type"));
 				parameter.put("value", (String) paramaterSpec.get("value"));
 				parameter.put("javadoc", (String) paramaterSpec.get("javadoc"));
+				parameter.put("isEnum", enumTypes.contains(paramaterSpec.get("type")) ? "true" : "false");
 				parameters.add(parameter);
 			}
 		}

@@ -31,23 +31,24 @@ public enum $display.capitalize($enumName) {
     }
 
     public static $display.capitalize($enumName) fromString(String name) {
+    System.out.println("DRR "+name);
         for ($display.capitalize($enumName) e : ${display.capitalize($enumName)}.values()) {
             if (e.name.equalsIgnoreCase(name)) {
                 return e;
             }
         }
-        return null;
+        return ${display.capitalize($enumName)}.valueOf(name);
     }
 
-	public static $display.capitalize($enumName) parse(JSONObject jsonObj) {
-		if (jsonObj == null) return null;
-		return fromString((String)jsonObj.get("enumName"));
+	public static $display.capitalize($enumName) parse(String enumValue) {
+		if (enumValue == null) return null;
+		return fromString(enumValue);
 	}
 
 	/**
 	 * @return the JSON string of this object
 	 */
 	public String toJSONString() {
-		return "{ \"enumName\": \"" + name + "\"}";
+		return name;
 	}
 }

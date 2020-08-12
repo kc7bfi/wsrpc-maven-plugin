@@ -54,7 +54,17 @@ public class $display.capitalize($noticeName)Notice {
 	 */
 	public static $display.capitalize($noticeName)Notice narrow(JSONRPC2Request notice) {
 #foreach ($parameter in $parameters)
-#if ($parameter.type.indexOf(".") > 0)
+#if ($parameter.type == "List<String>")
+			$parameter.type $parameter.name = new LinkedList<String>();
+			JSONArray ${parameter.name}Array = (JSONArray)notice.getNamedParams().get("$parameter.name");
+			for (int i = 0; i < ${parameter.name}Array.size(); i++) ${parameter.name}.add((String)${parameter.name}Array.get(i));
+#elseif ($parameter.type == "List<Integer>")
+			$parameter.type $parameter.name = new LinkedList<Integer>();
+			JSONArray ${parameter.name}Array = (JSONArray)notice.getNamedParams().get("$parameter.name");
+			for (int i = 0; i < ${parameter.name}Array.size(); i++) ${parameter.name}.add(((Long)${parameter.name}Array.get(i)).intValue());
+#elseif ($parameter.type.indexOf(".") > 0 && $parameter.isEnum == "true")
+			$parameter.type $parameter.name = ${parameter.type}.parse((String)notice.getNamedParams().get("$parameter.name"));
+#elseif ($parameter.type.indexOf(".") > 0)
 		$parameter.type $parameter.name = ${parameter.type}.parse((JSONObject)notice.getNamedParams().get("$parameter.name"));
 #elseif ($parameter.type == "int")
 		$parameter.type $parameter.name = ((Long)notice.getNamedParams().get("$parameter.name")).intValue();
