@@ -252,7 +252,10 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @param closeReason the reason for the close
 	 */
 	public void close(CloseReason closeReason) {
-		logger.info("Close Actor {} reason {} {} ", actorId, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+		if (!"Found closed".equals(closeReason.getReasonPhrase())) 
+			logger.info("Close Actor {} reason {} {} ", actorId, closeReason.getCloseCode(), closeReason.getReasonPhrase());
+		else
+			logger.debug("Close Actor {} reason {} {} ", actorId, closeReason.getCloseCode(), closeReason.getReasonPhrase());
 		if (closeReason.getCloseCode().equals(CloseReason.CloseCodes.NORMAL_CLOSURE)) {
 			logger.warn("Stopping reconnect future {}",checkAmReadyFuture);
 			if (checkAmReadyFuture != null) checkAmReadyFuture.cancel(false);
