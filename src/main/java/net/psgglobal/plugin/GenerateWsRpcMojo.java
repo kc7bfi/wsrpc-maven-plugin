@@ -826,7 +826,15 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 				parameter.put("type", (String) paramaterSpec.get("type"));
 				parameter.put("value", (String) paramaterSpec.get("value"));
 				parameter.put("javadoc", (String) paramaterSpec.get("javadoc"));
-				parameter.put("isEnum", enumTypes.contains(paramaterSpec.get("type")) ? "true" : "false");
+
+				String paramType = (String) paramaterSpec.get("type");
+				if (paramType != null && paramType.startsWith("List<")) {
+					String genericType = paramType.substring(5, paramType.length() - 1);
+					parameter.put("genericType", genericType);
+					parameter.put("isEnum", enumTypes.contains(genericType) ? "true" : "false");
+				} else {
+					parameter.put("isEnum", enumTypes.contains(paramType) ? "true" : "false");
+				}
 				parameters.add(parameter);
 			}
 		}

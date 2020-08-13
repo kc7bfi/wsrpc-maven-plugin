@@ -64,13 +64,17 @@ public class $display.capitalize($requestName)Request {
 		try {
 #foreach ($parameter in $parameters)
 #if ($parameter.type == "List<String>")
-			$parameter.type $parameter.name = new LinkedList<String>();
+			$parameter.type $parameter.name = new LinkedList<>();
 			JSONArray ${parameter.name}Array = (JSONArray)request.getNamedParams().get("$parameter.name");
 			for (int i = 0; i < ${parameter.name}Array.size(); i++) ${parameter.name}.add((String)${parameter.name}Array.get(i));
 #elseif ($parameter.type == "List<Integer>")
-			$parameter.type $parameter.name = new LinkedList<Integer>();
+			$parameter.type $parameter.name = new LinkedList<>();
 			JSONArray ${parameter.name}Array = (JSONArray)request.getNamedParams().get("$parameter.name");
 			for (int i = 0; i < ${parameter.name}Array.size(); i++) ${parameter.name}.add(((Long)${parameter.name}Array.get(i)).intValue());
+#elseif ($parameter.type.startsWith("List<") && $parameter.isEnum == "true")
+			$parameter.type $parameter.name = new LinkedList<>();
+			JSONArray ${parameter.name}Array = (JSONArray)notice.getNamedParams().get("$parameter.name");
+			for (int i = 0; i < ${parameter.name}Array.size(); i++) ${parameter.name}.add(${parameter.genericType}.parse((String)${parameter.name}Array.get(i)));
 #elseif ($parameter.type.indexOf(".") > 0 && $parameter.isEnum == "true")
 			$parameter.type $parameter.name = ${parameter.type}.parse((String)request.getNamedParams().get("$parameter.name"));
 #elseif ($parameter.type.indexOf(".") > 0)
