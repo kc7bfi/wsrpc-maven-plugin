@@ -402,7 +402,7 @@ public abstract class ${specname}Agent {
 #end
 	 */
 	public Single<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name#if($foreach.hasNext), #end#end) throws IOException {
-		return async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name#if($foreach.hasNext), #end#end, $request.defTimeout);
+		return async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end $request.defTimeout);
 	}
 	
 #end
