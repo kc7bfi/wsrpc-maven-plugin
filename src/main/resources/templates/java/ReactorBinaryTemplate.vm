@@ -99,7 +99,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 	 */
 	@OnError
 	public void onError(Session wsSession, Throwable error) {
-		logger.warn("WebSocket error: {}", error.getMessage() == null ? error.toString() : error.getMessage(), error);
+		logger.warn("WebSocket error: {}", ExceptionUtils.getMessage(error));
 		T managedAgent = managedAgents.remove(wsSession.getId());
 		if (managedAgent != null) managedAgent.onAgentRemoved(managedAgent);
 	}
@@ -163,7 +163,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 				if (logger.isDebugEnabled()) logger.debug("Error processing message {}: {}", json, ExceptionUtils.getMessage(ee));
 			} catch (Throwable ee) {
 				logger.warn("Error processing message {}: {}", json, ExceptionUtils.getMessage(ee), ee);
-				if (request != null) managedAgent.sendSilentInternalError(ee.getMessage(), (Long)request.getID());
+				if (request != null) managedAgent.sendSilentInternalError(ExceptionUtils.getMessage(ee), (Long)request.getID());
 			}
 		} catch (Throwable e) {
 			logger.warn("Error processing response message {}: {}", json, ExceptionUtils.getMessage(e), e);
@@ -188,10 +188,10 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 			managedAgent.sendSilentInvalidRequest("Invalid authentication token", (Long)request.getID());
 		} catch (NullPointerException e) {
 			if (logger.isDebugEnabled()) logger.debug("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e), e);
-			managedAgent.sendSilentInternalError(e.getMessage(), (Long)request.getID());
+			managedAgent.sendSilentInternalError(ExceptionUtils.getMessage(e), (Long)request.getID());
 		} catch (Exception e) {
 			logger.warn("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e));
-			managedAgent.sendSilentInternalError(e.getMessage(), (Long)request.getID());
+			managedAgent.sendSilentInternalError(ExceptionUtils.getMessage(e), (Long)request.getID());
 		}
 	}
 }

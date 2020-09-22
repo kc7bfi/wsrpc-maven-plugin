@@ -402,7 +402,7 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 */
 	@OnError
 	public void onError(Session wsSession, Throwable error) {
-		logger.warn("Actor {} {} WebSocket error: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(error), error);
+		logger.warn("Actor {} {} WebSocket error: {}", actorId, wsrpcServerUri, ExceptionUtils.getMessage(error));
 	}
 	
 	/**
