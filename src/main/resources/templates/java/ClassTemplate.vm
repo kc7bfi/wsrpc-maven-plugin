@@ -69,7 +69,7 @@ public class $display.capitalize($className) {
 			JSONParser parser = new JSONParser(JSONParser.MODE_PERMISSIVE);
 			JSONObject jsonObj = (JSONObject)parser.parse(json);
 			return parse(jsonObj);
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			LOGGER.warn("Error parsing JSON string {}: {}", json, ExceptionUtils.getMessage(e), e); 
 			return null;
 		}
