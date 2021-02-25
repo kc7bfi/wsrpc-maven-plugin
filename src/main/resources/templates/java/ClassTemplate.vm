@@ -109,8 +109,8 @@ public class $display.capitalize($className) {
 #end
 #end
 			return newObj;
-		} catch (Exception e) {
-			LOGGER.warn("Error parsing JSON object: {}", ExceptionUtils.getMessage(e), e); 
+		} catch (Throwable e) {
+			LOGGER.warn("Error parsing JSON object {}: {}", jsonObj.toJSONString(), ExceptionUtils.getMessage(e), e); 
 			return null;
 		}
 	}
