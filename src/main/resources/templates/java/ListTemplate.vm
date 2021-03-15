@@ -68,7 +68,7 @@ public class $display.capitalize($listName) {
    			if (items != null && items.size() > 0) for (Object item : items) newObj.get$display.capitalize($item)().add(${listOf}.parse((JSONObject)item));
 			return newObj;
 		} catch (Exception e) {
-			LOGGER.warn("Error parsing JSON object: {}", ExceptionUtils.getMessage(e), e); 
+			LOGGER.warn("Error parsing JSON object {}: {}", jsonObj.toJSONString(), ExceptionUtils.getMessage(e), e); 
 			return null;
 		}
 	}
