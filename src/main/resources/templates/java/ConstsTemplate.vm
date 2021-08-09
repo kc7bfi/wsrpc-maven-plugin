@@ -4,9 +4,6 @@ import java.lang.StringBuilder;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.minidev.json.JSONObject;
-import net.minidev.json.parser.JSONParser;
-
 /**
  * Generated with Velocity - DO NOT EDIT
 #if ($constJavadoc)
