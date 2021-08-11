@@ -158,6 +158,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 #foreach ($notice in $clientNotices)
 				else if (${display.capitalize($notice.name)}Notice.canNarrow(request)) compositFutures.add(threadPool.submit(() -> managedAgent.on${display.capitalize($notice.name)}(${display.capitalize($notice.name)}Notice.narrow(finalRequest))));
 #end
+				else logger.warn("Cannot narrow request {}", json);
 				return;
 			} catch (JSONRPC2ParseException ee) {
 				if (logger.isDebugEnabled()) logger.debug("Error processing message {}: {}", json, ExceptionUtils.getMessage(ee));
