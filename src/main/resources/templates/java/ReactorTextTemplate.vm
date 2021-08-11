@@ -175,7 +175,7 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 		} catch (NullPointerException e) {
 			if (logger.isDebugEnabled()) logger.debug("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e), e);
 			managedAgent.sendSilentInternalError(ExceptionUtils.getMessage(e), (Long)request.getId());
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			logger.warn("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e));
 			managedAgent.sendSilentInternalError(ExceptionUtils.getMessage(e), (Long)request.getId());
 		}

@@ -6,6 +6,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.Gson;
+
 import net.psgglobal.wsrpc.jsonrpc2.JsonRpc20Request;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -21,11 +23,13 @@ import org.slf4j.LoggerFactory;
  */
 public class $display.capitalize($noticeName)Notice {
 	private static final Logger LOGGER = LoggerFactory.getLogger(${display.capitalize($noticeName)}Notice.class.getName());
+	
+	private static Gson GSON = new Gson();
 
 #foreach ($parameter in $parameters)
 	private final $parameter.type $parameter.name;
 #end
-	private final long requestId;
+	private long requestId;
 
 	/**
 	 * Constructor
@@ -58,41 +62,9 @@ public class $display.capitalize($noticeName)Notice {
 	 * @return the new notice
 	 */
 	public static $display.capitalize($noticeName)Notice narrow(JsonRpc20Request notice) {
-		try {
-#foreach ($parameter in $parameters)
-#if ($parameter.type == "List<String>")
-			$parameter.type $parameter.name = new LinkedList<>();
-			JSONArray ${parameter.name}Array = (JSONArray)notice.getMapParam("$parameter.name");
-			for (int i = 0; i < ${parameter.name}Array.size(); i++) ${parameter.name}.add((String)${parameter.name}Array.get(i));
-#elseif ($parameter.type == "List<Integer>")
-			$parameter.type $parameter.name = new LinkedList<>();
-			JSONArray ${parameter.name}Array = (JSONArray)notice.getMapParam("$parameter.name");
-			for (int i = 0; i < ${parameter.name}Array.size(); i++) ${parameter.name}.add(((Long)${parameter.name}Array.get(i)).intValue());
-#elseif ($parameter.type.startsWith("List<") && $parameter.isEnum == "true")
-			$parameter.type $parameter.name = new LinkedList<>();
-			JSONArray ${parameter.name}Array = (JSONArray)notice.getMapParam("$parameter.name");
-			for (int i = 0; i < ${parameter.name}Array.size(); i++) ${parameter.name}.add(${parameter.genericType}.parse((String)${parameter.name}Array.get(i)));
-#elseif ($parameter.type.indexOf(".") > 0 && $parameter.isEnum == "true")
-			$parameter.type $parameter.name = ${parameter.type}.parse((String)notice.getMapParam("$parameter.name"));
-#elseif ($parameter.type.indexOf(".") > 0)
-			$parameter.type $parameter.name = ${parameter.type}.parse((JSONObject)notice.getMapParam("$parameter.name"));
-#elseif ($parameter.type == "int")
-			$parameter.type $parameter.name = ((Long)notice.getMapParam("$parameter.name")).intValue();
-#elseif ($parameter.type == "double")
-			$parameter.type $parameter.name = 0.0;
-			if (notice.getMapParam("$parameter.name") instanceof BigDecimal)
-				$parameter.name = ((BigDecimal)notice.getMapParam("$parameter.name")).doubleValue();
-			else
-				$parameter.name = ((Double)notice.getMapParam("$parameter.name")).doubleValue();
-#else
-			$parameter.type $parameter.name = ($parameter.type)notice.getMapParam("$parameter.name");
-#end
-#end
-			return new $display.capitalize($noticeName)Notice(#foreach ($parameter in $parameters)$parameter.name, #end (Long)notice.getId());
-		} catch (Throwable e) {
-			LOGGER.warn("Error narrowing notice: {}", ExceptionUtils.getMessage(e), e);
-		}
-		return null;
+		$display.capitalize($noticeName)Notice narrowed = GSON.fromJson(GSON.toJson(notice.getParams()), $display.capitalize($noticeName)Notice.class);
+		narrowed.requestId = notice.getId();
+		return narrowed;
 	}
 
 	/**

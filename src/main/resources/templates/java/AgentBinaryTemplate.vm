@@ -180,8 +180,8 @@ public abstract class ${specname}Agent {
 	public void sendSilentInternalError(String error, long requestId) {
 		try {
 			if (logger.isDebugEnabled()) logger.debug("Send internal error: {} for request {}", error, requestId); 
-			wsSession.getBasicRemote().sendBinary(stringByteBuffer(requestId, new JsonRpc20Response(JsonRpc20Error.internalError("Internal Error: " + error)).toJSONString()));
-		} catch (Exception e) {
+			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JsonRpc20Response(requestId, JsonRpc20Error.internalError("Internal Error: " + error)).toJSONString()));
+		} catch (Throwable e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
 	}
@@ -194,7 +194,7 @@ public abstract class ${specname}Agent {
 	public void sendSilentInvalidParams(String error, long requestId) {
 		try {
 			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JsonRpc20Response(requestId, JsonRpc20Error.invalidParams("Invalid Params: " + error)).toJSONString()));
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
 	}
@@ -207,7 +207,7 @@ public abstract class ${specname}Agent {
 	public void sendSilentInvalidRequest(String error, long requestId) {
 		try {
 			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JsonRpc20Response(requestId, JsonRpc20Error.invalidRequest("Invalid Request: " + error)).toJSONString()));
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
 	}
@@ -219,7 +219,7 @@ public abstract class ${specname}Agent {
 	public void sendSilentResponse(long requestId) {
 		try {
 			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JsonRpc20Response(requestId).toJSONString()));
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
 	}
@@ -232,7 +232,7 @@ public abstract class ${specname}Agent {
 	public void sendSilentResponse(Object result, long requestId) {
 		try {
 			wsSession.getBasicRemote().sendBinary(stringByteBuffer(new JsonRpc20Response(requestId, result).toJSONString()));
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
 	}
@@ -333,7 +333,7 @@ public abstract class ${specname}Agent {
 			sendSilentInvalidRequest(ExceptionUtils.getRootCauseMessage(e), request.getRequestId());
 		} catch (WsRpcInvalidParamsException e) {
 			sendSilentInvalidParams(ExceptionUtils.getRootCauseMessage(e), request.getRequestId());
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			logger.warn("Error executing on${display.capitalize($request.name)}: {}", ExceptionUtils.getMessage(e), e);
 			sendSilentInternalError(ExceptionUtils.getRootCauseMessage(e), request.getRequestId());
 		}

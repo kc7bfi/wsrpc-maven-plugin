@@ -26,6 +26,7 @@ import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.tools.ToolContext;
 import org.apache.velocity.tools.ToolManager;
+import org.apache.velocity.tools.config.ConfigurationUtils;
 
 import com.codesnippets4all.json.parsers.JSONParser;
 import com.codesnippets4all.json.parsers.JsonParserFactory;
@@ -218,8 +219,8 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
-		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
-		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, "classpath");
+		velocityEngine.setProperty("resource.loader.classpath.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
 		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/ClassTemplate.vm");
 
@@ -227,6 +228,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
 		toolProperties.put("engine", velocityEngine);
 		ToolManager toolManager = new ToolManager(true, true);
+		toolManager.configure(ConfigurationUtils.getGenericTools());
 
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
@@ -290,8 +292,8 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
-		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
-		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, "classpath");
+		velocityEngine.setProperty("resource.loader.classpath.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
 		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/ConstsTemplate.vm");
 
@@ -299,6 +301,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
 		toolProperties.put("engine", velocityEngine);
 		ToolManager toolManager = new ToolManager(true, true);
+		toolManager.configure(ConfigurationUtils.getGenericTools());
 
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
@@ -362,8 +365,8 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
-		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
-		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, "classpath");
+		velocityEngine.setProperty("resource.loader.classpath.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
 		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/EnumTemplate.vm");
 
@@ -371,6 +374,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
 		toolProperties.put("engine", velocityEngine);
 		ToolManager toolManager = new ToolManager(true, true);
+		toolManager.configure(ConfigurationUtils.getGenericTools());
 
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
@@ -434,8 +438,8 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
-		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
-		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, "classpath");
+		velocityEngine.setProperty("resource.loader.classpath.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
 		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/ListTemplate.vm");
 
@@ -443,6 +447,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
 		toolProperties.put("engine", velocityEngine);
 		ToolManager toolManager = new ToolManager(true, true);
+		toolManager.configure(ConfigurationUtils.getGenericTools());
 
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
@@ -507,8 +512,8 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
-		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
-		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, "classpath");
+		velocityEngine.setProperty("resource.loader.classpath.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
 		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/NoticeTemplate.vm");
 
@@ -516,6 +521,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
 		toolProperties.put("engine", velocityEngine);
 		ToolManager toolManager = new ToolManager(true, true);
+		toolManager.configure(ConfigurationUtils.getGenericTools());
 
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
@@ -579,8 +585,8 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
-		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
-		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, "classpath");
+		velocityEngine.setProperty("resource.loader.classpath.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
 		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/RequestTemplate.vm");
 
@@ -588,6 +594,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
 		toolProperties.put("engine", velocityEngine);
 		ToolManager toolManager = new ToolManager(true, true);
+		toolManager.configure(ConfigurationUtils.getGenericTools());
 
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
@@ -637,8 +644,8 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
-		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
-		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, "classpath");
+		velocityEngine.setProperty("resource.loader.classpath.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
 		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/Reactor" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
 
@@ -646,6 +653,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
 		toolProperties.put("engine", velocityEngine);
 		ToolManager toolManager = new ToolManager(true, true);
+		toolManager.configure(ConfigurationUtils.getGenericTools());
 
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
@@ -701,8 +709,8 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
-		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
-		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, "classpath");
+		velocityEngine.setProperty("resource.loader.classpath.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
 		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/Actor" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
 
@@ -710,6 +718,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
 		toolProperties.put("engine", velocityEngine);
 		ToolManager toolManager = new ToolManager(true, true);
+		toolManager.configure(ConfigurationUtils.getGenericTools());
 
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
@@ -764,8 +773,8 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
-		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
-		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, "classpath");
+		velocityEngine.setProperty("resource.loader.classpath.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
 		Template vilocityTemplate = velocityEngine.getTemplate("templates/java/Agent" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
 
@@ -773,6 +782,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
 		toolProperties.put("engine", velocityEngine);
 		ToolManager toolManager = new ToolManager(true, true);
+		toolManager.configure(ConfigurationUtils.getGenericTools());
 
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
@@ -941,8 +951,8 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
-		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
-		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, "classpath");
+		velocityEngine.setProperty("resource.loader.classpath.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
 		Template vilocityTemplate = velocityEngine.getTemplate("templates/ts/ClassTemplate.vm");
 
@@ -950,6 +960,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
 		toolProperties.put("engine", velocityEngine);
 		ToolManager toolManager = new ToolManager(true, true);
+		toolManager.configure(ConfigurationUtils.getGenericTools());
 
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
@@ -998,8 +1009,8 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 
 		// initialize the Velocity engine
 		VelocityEngine velocityEngine = new VelocityEngine();
-		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
-		velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+		velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, "classpath");
+		velocityEngine.setProperty("resource.loader.classpath.class", ClasspathResourceLoader.class.getName());
 		velocityEngine.init();
 		Template vilocityTemplate = velocityEngine.getTemplate("templates/ts/Actor" + (supportBinaryData ? "Binary" : "Text") + "Template.vm");
 
@@ -1007,6 +1018,7 @@ public class GenerateWsRpcMojo extends AbstractMojo {
 		Map<String, Object> toolProperties = new HashMap<String, Object>();
 		toolProperties.put("engine", velocityEngine);
 		ToolManager toolManager = new ToolManager(true, true);
+		toolManager.configure(ConfigurationUtils.getGenericTools());
 
 		// set up the Velocity context model
 		ToolContext velocityContext = toolManager.createContext();
