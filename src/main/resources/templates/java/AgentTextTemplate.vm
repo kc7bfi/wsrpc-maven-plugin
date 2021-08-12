@@ -16,13 +16,12 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
-import net.minidev.json.JSONObject;
 import net.psgglobal.wsrpc.core.WsRpcException;
 import net.psgglobal.wsrpc.core.WsRpcInternalErrorException;
 import net.psgglobal.wsrpc.core.WsRpcInvalidRequestException;
 import net.psgglobal.wsrpc.core.WsRpcInvalidParamsException;
-import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
-import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
+import net.psgglobal.wsrpc.jsonrpc2.JsonRpc20Error;
+import net.psgglobal.wsrpc.jsonrpc2.JsonRpc20Response;
 
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.CompositeDisposable;
@@ -41,7 +40,7 @@ public abstract class ${specname}Agent {
 	
 	protected Session wsSession;
 	protected DecodedJWT jwtAuthentication;
-	protected final Map<Long, AsyncSubject<JSONRPC2Response>> responseSubjects = new HashMap<>();
+	protected final Map<Long, AsyncSubject<JsonRpc20Response>> responseSubjects = new HashMap<>();
 	protected AtomicLong lastRequestId = new AtomicLong();
 	private CompositeDisposable compositeDisposable = new CompositeDisposable();
 
@@ -70,11 +69,11 @@ public abstract class ${specname}Agent {
 	 * Process a response
 	 * @param response the response
 	 */
-	public void processResponse(JSONRPC2Response response) {
-		if (!responseSubjects.containsKey(response.getID())) {
-			logger.warn("No one waiting for response {}: {}", response.getID(), response.toJSONString());
+	public void processResponse(JsonRpc20Response response) {
+		if (!responseSubjects.containsKey(response.getId())) {
+			logger.warn("No one waiting for response {}: {}", response.getId(), response.toJSONString());
 		} else {
-			AsyncSubject<JSONRPC2Response> responseSubject = responseSubjects.remove(response.getID());
+			AsyncSubject<JsonRpc20Response> responseSubject = responseSubjects.remove(response.getId());
 			responseSubject.onNext(response);
 			responseSubject.onComplete();
 		}
@@ -87,7 +86,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendInternalError(String error, long requestId) throws IOException {
 		if (logger.isDebugEnabled()) logger.debug("Send InternalError: {} for request {}", error, requestId); 
-		wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(error), requestId).toJSONString());
+		wsSession.getBasicRemote().sendText(new JsonRpc20Response(requestId, JsonRpc20Error.internalError("Internal Error: " + error)).toJSONString());
 	}
 
 	/**
@@ -97,7 +96,7 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendInvalidParams(String error, long requestId) throws IOException {
 		if (logger.isDebugEnabled()) logger.debug("Send InvalidParams: {} for request {}", error, requestId); 
-		wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INVALID_PARAMS.appendMessage(error), requestId).toJSONString());
+		wsSession.getBasicRemote().sendText(new JsonRpc20Response(requestId,  JsonRpc20Error.invalidParams("Invalid Params: " + error)).toJSONString());
 	}
 
 	/**
@@ -107,14 +106,14 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendInvalidRequest(String error, long requestId) throws IOException {
 		if (logger.isDebugEnabled()) logger.debug("Send InvalidRequest: {} for request {}", error, requestId); 
-		wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INVALID_REQUEST.appendMessage(error), requestId).toJSONString());
+		wsSession.getBasicRemote().sendText(new JsonRpc20Response(requestId, JsonRpc20Error.invalidRequest("Invalid Request: " + error)).toJSONString());
 	}
 
 	/**
 	 * Send a response
 	 * @param requestId the original request id
 	public void sendResponse(long requestId) throws IOException {
-		String jsonResponse = new JSONRPC2Response(requestId).toJSONString();
+		String jsonResponse = new JsonRpc20Response(requestId).toJSONString();
 		if (logger.isDebugEnabled()) logger.debug("Send response: {}", jsonResponse); 
 		wsSession.getBasicRemote().sendText(jsonResponse);
 	}
@@ -126,7 +125,7 @@ public abstract class ${specname}Agent {
 	 * @param requestId the original request id
 	 */
 	public void sendResponse(Object result, long requestId) throws IOException {
-		String jsonResponse = new JSONRPC2Response(result, requestId).toJSONString();
+		String jsonResponse = new JsonRpc20Response(requestId, result).toJSONString();
 		if (logger.isDebugEnabled()) logger.debug("Send response: {}", jsonResponse); 
 		wsSession.getBasicRemote().sendText(jsonResponse);
 	}
@@ -139,8 +138,8 @@ public abstract class ${specname}Agent {
 	public void sendSilentInternalError(String error, long requestId) {
 		try {
 			if (logger.isDebugEnabled()) logger.debug("Send InternalError: {} for request {}", error, requestId); 
-			wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(error), requestId).toJSONString());
-		} catch (Exception e) {
+			wsSession.getBasicRemote().sendText(new JsonRpc20Response(requestId, JsonRpc20Error.internalError("Internal Error: " + error)).toJSONString());
+		} catch (Throwable e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
 	}
@@ -153,8 +152,8 @@ public abstract class ${specname}Agent {
 	public void sendSilentInvalidParams(String error, long requestId) {
 		try {
 			if (logger.isDebugEnabled()) logger.debug("Send InvalidParams: {} for request {}", error, requestId); 
-			wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INVALID_PARAMS.appendMessage(error), requestId).toJSONString());
-		} catch (Exception e) {
+			wsSession.getBasicRemote().sendText(new JsonRpc20Response(requestId, JsonRpc20Error.invalidParams("Invalid Params: " + error)).toJSONString());
+		} catch (Throwable e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
 	}
@@ -167,8 +166,8 @@ public abstract class ${specname}Agent {
 	public void sendSilentInvalidRequest(String error, long requestId) {
 		try {
 			if (logger.isDebugEnabled()) logger.debug("Send InvalidRequest: {} for request {}", error, requestId); 
-			wsSession.getBasicRemote().sendText(new JSONRPC2Response(JSONRPC2Error.INVALID_REQUEST.appendMessage(error), requestId).toJSONString());
-		} catch (Exception e) {
+			wsSession.getBasicRemote().sendText(new JsonRpc20Response(requestId, JsonRpc20Error.invalidRequest("Invalid Request: " + error)).toJSONString());
+		} catch (Throwable e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
 	}
@@ -179,10 +178,10 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentResponse(long requestId) {
 		try {
-			String jsonResponse = new JSONRPC2Response(requestId).toJSONString();
+			String jsonResponse = new JsonRpc20Response(requestId).toJSONString();
 			if (logger.isDebugEnabled()) logger.debug("Send response: {}", jsonResponse); 
 			wsSession.getBasicRemote().sendText(jsonResponse);
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
 	}
@@ -194,10 +193,10 @@ public abstract class ${specname}Agent {
 	 */
 	public void sendSilentResponse(Object result, long requestId) {
 		try {
-			String jsonResponse = new JSONRPC2Response(result, requestId).toJSONString();
+			String jsonResponse = new JsonRpc20Response(requestId, result).toJSONString();
 			if (logger.isDebugEnabled()) logger.debug("Send response: {}", jsonResponse); 
 			wsSession.getBasicRemote().sendText(jsonResponse);
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			logger.warn("Error sending response: {}", ExceptionUtils.getMessage(e));
 		}
 	}
@@ -318,11 +317,11 @@ public abstract class ${specname}Agent {
 #end
 	 * @param timeout the call timeout in milliseconds
 	 */
-	public Single<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
+	public Single<JsonRpc20Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
 		${display.capitalize($request.name)}Request request = new ${display.capitalize($request.name)}Request(#foreach ($parameter in $request.parameters)$parameter.name, #end lastRequestId.incrementAndGet());
-		AsyncSubject<JSONRPC2Response> responseSubject = AsyncSubject.create();
+		AsyncSubject<JsonRpc20Response> responseSubject = AsyncSubject.create();
 		responseSubjects.put(request.getRequestId(), responseSubject);
-		Single<JSONRPC2Response> single = responseSubject.singleOrError().timeout(timeout, TimeUnit.MILLISECONDS, Single.just(new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" Timeout"), request.getRequestId())));
+		Single<JsonRpc20Response> single = responseSubject.singleOrError().timeout(timeout, TimeUnit.MILLISECONDS, Single.just(new JsonRpc20Response(request.getRequestId(), JsonRpc20Error.internalError("Internal Error: Timeout"))));
 		if (logger.isDebugEnabled()) logger.debug("Send request: {}", request.toJSONString()); 
 		wsSession.getBasicRemote().sendText(request.toJSONString());
 		return single;
@@ -341,10 +340,10 @@ public abstract class ${specname}Agent {
 	 * @param timeout the call timeout in milliseconds
 	 */
 	public $request.returns ${display.uncapitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name, #end int timeout) throws IOException {
-		JSONRPC2Response response = async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end timeout)
+		JsonRpc20Response response = async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end timeout)
 				.onErrorReturn((e) -> { 
 					if (logger.isDebugEnabled()) logger.debug("${display.uncapitalize($request.name)}: {}", ExceptionUtils.getMessage(e), e); 
-					return new JSONRPC2Response(JSONRPC2Error.INTERNAL_ERROR.appendMessage(" " + ExceptionUtils.getMessage(e)), 0); 
+					return new JsonRpc20Response(0, JsonRpc20Error.internalError("Internal Error: " + ExceptionUtils.getMessage(e))); 
 				})
 				.blockingGet();
 		if (response == null) throw new IOException("TimeOut");
@@ -366,7 +365,7 @@ public abstract class ${specname}Agent {
 #end
 #end
 	 */
-	public Single<JSONRPC2Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name#if($foreach.hasNext), #end#end) throws IOException {
+	public Single<JsonRpc20Response> async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.type $parameter.name#if($foreach.hasNext), #end#end) throws IOException {
 		return async${display.capitalize($request.name)}(#foreach ($parameter in $request.parameters)$parameter.name, #end $request.defTimeout);
 	}
 	

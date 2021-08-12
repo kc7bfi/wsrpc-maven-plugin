@@ -20,10 +20,9 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
-import com.thetransactioncompany.jsonrpc2.JSONRPC2ParseException;
-import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
-import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
+import net.psgglobal.wsrpc.jsonrpc2.JsonRpc20ParseException;
+import net.psgglobal.wsrpc.jsonrpc2.JsonRpc20Request;
+import net.psgglobal.wsrpc.jsonrpc2.JsonRpc20Response;
 import net.psgglobal.wsrpc.core.WsRpcCompositFuture;
 
 import io.reactivex.subjects.BehaviorSubject;
@@ -119,25 +118,25 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 
 		// process results
 		try {
-			JSONRPC2Response response = JSONRPC2Response.parse(json);
+			JsonRpc20Response response = JsonRpc20Response.parse(json);
 			managedAgent.processResponse(response);
 			return;
-		} catch (JSONRPC2ParseException e) {
+		} catch (JsonRpc20ParseException e) {
 		
 			// process the message
-			JSONRPC2Request request = null;
+			JsonRpc20Request request = null;
 			try {
-				request = JSONRPC2Request.parse(json);
+				request = JsonRpc20Request.parse(json);
 
 				// Verify that we have been authenticated
 				if (REQUIRE_AUTHENTICATION && !request.getMethod().equals("Authenticate") && !managedAgent.isAuthenticated()) {
 					if (logger.isDebugEnabled()) logger.debug("Session {} has not been authenticated", wsSession.getId());
-					managedAgent.sendInvalidRequest("User not authenticated", (Long)request.getID());
+					managedAgent.sendInvalidRequest("User not authenticated", (Long)request.getId());
 					return;
 				}
 
 				// process methods
-				final JSONRPC2Request finalRequest = request;
+				final JsonRpc20Request finalRequest = request;
 				if (request.getMethod().equals("Authenticate")) doAuthenticate(managedAgent, request);
 #foreach ($request in $clientRequests)
 				else if (${display.capitalize($request.name)}Request.canNarrow(request)) compositFutures.add(threadPool.submit(() -> managedAgent.on${display.capitalize($request.name)}(${display.capitalize($request.name)}Request.narrow(finalRequest))));
@@ -147,11 +146,11 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 #end
 				else logger.warn("Cannot narrow request {}", json);
 				return;
-			} catch (JSONRPC2ParseException ee) {
+			} catch (JsonRpc20ParseException ee) {
 				if (logger.isDebugEnabled()) logger.debug("Error processing message {}: {}", json, ExceptionUtils.getMessage(ee));
 			} catch (Throwable ee) {
 				logger.warn("Error processing message {}: {}", json, ExceptionUtils.getMessage(ee), ee);
-				if (request != null) managedAgent.sendSilentInternalError(ExceptionUtils.getMessage(ee), (Long)request.getID());
+				if (request != null) managedAgent.sendSilentInternalError(ExceptionUtils.getMessage(ee), (Long)request.getId());
 			}
 		} catch (Throwable e) {
 			logger.warn("Error processing response message {}: {}", json, ExceptionUtils.getMessage(e), e);
@@ -165,21 +164,21 @@ public abstract class ${specname}Reactor<T extends ${specname}Agent> {
 	 * @param managedAgent the managed agent
 	 * @param request the Authentication request
 	 */
-	private void doAuthenticate(T managedAgent, JSONRPC2Request request) {
+	private void doAuthenticate(T managedAgent, JsonRpc20Request request) {
 		try {
-			DecodedJWT jwtAuthentication = valiateJWTToken((String) request.getNamedParams().get("token"));
+			DecodedJWT jwtAuthentication = valiateJWTToken((String) request.getMapParam("token"));
 			managedAgent.setJwtAuthentication(jwtAuthentication);
-			managedAgent.sendResponse(true, (Long)request.getID());
+			managedAgent.sendResponse(true, (Long)request.getId());
 			if (logger.isDebugEnabled()) logger.debug("WsSession {} authenticated", managedAgent.getWsSessionId());
 		} catch (JWTVerificationException e) {
 			if (logger.isDebugEnabled()) logger.debug("Invalid authentication token for session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e));
-			managedAgent.sendSilentInvalidRequest("Invalid authentication token", (Long)request.getID());
+			managedAgent.sendSilentInvalidRequest("Invalid authentication token", (Long)request.getId());
 		} catch (NullPointerException e) {
 			if (logger.isDebugEnabled()) logger.debug("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e), e);
-			managedAgent.sendSilentInternalError(ExceptionUtils.getMessage(e), (Long)request.getID());
-		} catch (Exception e) {
+			managedAgent.sendSilentInternalError(ExceptionUtils.getMessage(e), (Long)request.getId());
+		} catch (Throwable e) {
 			logger.warn("Could not authenticate session {}: {}", managedAgent.getWsSessionId(), ExceptionUtils.getMessage(e));
-			managedAgent.sendSilentInternalError(ExceptionUtils.getMessage(e), (Long)request.getID());
+			managedAgent.sendSilentInternalError(ExceptionUtils.getMessage(e), (Long)request.getId());
 		}
 	}
 }

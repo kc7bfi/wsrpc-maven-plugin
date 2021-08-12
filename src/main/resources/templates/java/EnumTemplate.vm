@@ -1,7 +1,5 @@
 package $packageName;
 
-import net.minidev.json.JSONObject;
-
 /**
  * Generated with Velocity - DO NOT EDIT
 #if ($enumJavadoc)
