@@ -583,7 +583,9 @@ public abstract class ${specname}Actor implements AutoCloseable {
 #elseif ($request.returns.indexOf(".") > 0)
 		return ${request.returns}.parse(GSON.toJson(response.getResult()));
 #elseif ($request.returns == "int")
-		return ((Long) response.getResult()).intValue();
+		return response.getIntegerResult();
+#elseif ($request.returns == "long")
+		return response.getLongResult();
 #else
 		return ($request.returns) response.getResult();
 #end
