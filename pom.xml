@@ -4,7 +4,7 @@
 
 	<groupId>net.psgglobal.wsrpc</groupId>
 	<artifactId>wsrpc-maven-plugin</artifactId>
-	<version>1.4</version>
+	<version>1.5-SNAPSHOT</version>
 	<packaging>maven-plugin</packaging>
 
 	<name>WebSocket RPC Maven Plugin</name>
@@ -53,7 +53,7 @@
 		<maven.source.plugin.version>3.2.0</maven.source.plugin.version>
 		<plexus.version>3.0.24</plexus.version>
 		<quick.json.version>1.0.4</quick.json.version>
-		<slf4j.version>1.7.30</slf4j.version>
+		<slf4j.version>1.7.32</slf4j.version>
 		<velocity.engine.version>2.3</velocity.engine.version>
 		<velocity.tools.version>3.1</velocity.tools.version>
 	</properties>
