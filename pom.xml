@@ -37,18 +37,20 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<commons.io.version>2.11.0</commons.io.version>
-		<guava.version>31.1-jre</guava.version>
+		<guava.version>32.0.1-jre</guava.version>
 		<junit.version>4.13.1</junit.version>
-		<maven.version>3.5.0</maven.version>
-		<maven.annotations.version>3.5</maven.annotations.version>
-		<maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
+		<maven.version>3.6.3</maven.version>
+		<maven.annotations.version>3.6.0</maven.annotations.version>
+		<maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
 		<maven.core.version>3.8.6</maven.core.version>
+		<maven.dependency.check.version>8.4.0</maven.dependency.check.version><!--dependency-check-maven-->
 		<maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
 		<maven.invoker.plugin.version>3.2.2</maven.invoker.plugin.version>
-		<maven.javadoc.plugin.version>3.3.0</maven.javadoc.plugin.version>
+		<maven.javadoc.plugin.version>3.3.2</maven.javadoc.plugin.version>
 		<maven.plugin.annotations.version>3.6.1</maven.plugin.annotations.version>
 		<maven.plugin.api.version>3.8.1</maven.plugin.api.version>
 		<maven.plugin.plugin.version>3.6.1</maven.plugin.plugin.version>
+		<maven.project.version>2.2.1</maven.project.version>
 		<maven.nexus.staging.version>1.6.7</maven.nexus.staging.version>
 		<maven.source.plugin.version>3.2.0</maven.source.plugin.version>
 		<plexus.version>3.0.24</plexus.version>
@@ -132,6 +134,11 @@
 			<artifactId>slf4j-api</artifactId>
 			<version>${slf4j.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-project</artifactId>
+			<version>${maven.project.version}</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -200,6 +207,27 @@
 					</execution>
 				</executions>
 			</plugin>
+				<plugin>
+					<groupId>org.owasp</groupId>
+					<artifactId>dependency-check-maven</artifactId>
+					<version>${maven.dependency.check.version}</version>
+					<configuration>
+						<ossindexServerId>ossindex</ossindexServerId>
+						<skipProvidedScope>true</skipProvidedScope>
+						<skipTestScope>true</skipTestScope>
+						<skipSystemScope>true</skipSystemScope>
+						<failBuildOnCVSS>0</failBuildOnCVSS>
+						<retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
+						<assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+						<nodeAuditSkipDevDependencies>true</nodeAuditSkipDevDependencies>
+						<nodePackageSkipDevDependencies>true</nodePackageSkipDevDependencies>
+						<nodeAnalyzerEnabled>true</nodeAnalyzerEnabled>
+						<nodeAuditAnalyzerEnabled>true</nodeAuditAnalyzerEnabled>
+						<suppressionFiles>
+							<suppressionFile>OWASPSuppressionFile.xml</suppressionFile>
+						</suppressionFiles>
+					</configuration>
+				</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-gpg-plugin</artifactId>
