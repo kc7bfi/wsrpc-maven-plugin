@@ -105,11 +105,6 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @param serverUrl the server URL
 	 */
 	public ${specname}Actor(String serverUrl) {
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			public void run() {
-				if (client != null) client.shutdown();
-			}
-		});
 		wsrpcServerUri = URI.create(serverUrl);
 	}
 
