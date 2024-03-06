@@ -114,11 +114,6 @@ public abstract class ${specname}Actor implements AutoCloseable {
 	 * @param reconnectHandler the reconnection handler to use
 	 */
 	public ${specname}Actor(String serverUrl, ClientManager.ReconnectHandler reconnectHandler) {
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			public void run() {
-				if (client != null) client.shutdown();
-			}
-		});
 		this.reconnectHandler = reconnectHandler;
 		wsrpcServerUri = URI.create(serverUrl);
 	}
